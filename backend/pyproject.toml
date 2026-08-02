@@ -1,0 +1,55 @@
+[project]
+name = "fptn-admin-backend"
+version = "0.1.0"
+description = "Admin API for managing fptn VPN users"
+authors = [{ name = "Stas Skokov" }]
+license = "MIT"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.34,<1.0",
+    "pydantic-settings>=2.7,<3.0",
+    "pyjwt>=2.10,<3.0",
+    "bcrypt>=4.2,<5.0",
+    "brotli>=1.1,<2.0",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8,<9"
+httpx = ">=0.27,<1.0"
+black = ">=24,<26"
+pylint = ">=3,<4"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 120
+
+[tool.pylint.main]
+py-version = "3.14"
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint."messages control"]
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "redefined-builtin",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+]
+
+[tool.pylint.basic]
+good-names = ["f", "e", "lf", "fd", "d", "c", "s", "tmp", "pageSize"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

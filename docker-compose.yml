@@ -1,0 +1,29 @@
+services:
+  fptn-admin-backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      - JWT_TTL_MINUTES=${JWT_TTL_MINUTES:-60}
+      - ADMIN_LOGIN=${ADMIN_LOGIN:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - USERS_FILE=/etc/fptn/users.list
+      - ADMINS_FILE=/etc/fptn/admins.json
+      - MAX_USER_SPEED_LIMIT=${MAX_USER_SPEED_LIMIT:-30}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - SERVICE_NAME=${SERVICE_NAME:-fptn}
+      - ENABLE_BROTLI_COMPRESSION=${ENABLE_BROTLI_COMPRESSION:-false}
+      - SERVERS_FILE=/etc/fptn/servers.json
+      - PREMIUM_SERVERS_FILE=/etc/fptn/premium_servers.json
+      - CENSORED_SERVERS_FILE=/etc/fptn/servers_censored_zone.json
+    volumes:
+      - ${FPTN_CONFIGS_FOLDER:-./compose-data}:/etc/fptn:rw
+    ports:
+      - "8000:8000"
+
+  # frontend:
+  #   build: ./frontend
+  #   container_name: fptn-admin-frontend
+  #   restart: unless-stopped
+  #   depends_on: [backend]
+  #   ports:
+  #     - "8080:80"
