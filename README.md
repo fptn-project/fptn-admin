@@ -6,7 +6,7 @@ backend API for managing VPN users + a frontend (SPA) that consumes it.
 ```
 fptn-admin/
   backend/     FastAPI service (Poetry, Docker)
-  frontend/    admin panel SPA (TBD)
+  frontend/    admin panel SPA (React + TypeScript + Vite)
   docker-compose.yml
 ```
 

@@ -135,4 +135,4 @@ def test_dashboard_highlights(client, auth):
 
     resp = client.get("/api/v1/dashboard/highlights", headers=auth)
     assert resp.status_code == 200
-    assert resp.json() == {"totalUsers": 2, "premiumUsers": 1}
+    assert resp.json() == {"totalUsers": 2, "premiumUsers": 1, "blockedUsers": 0}

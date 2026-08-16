@@ -81,10 +81,19 @@ class Server(BaseModel):
     host: str
     md5_fingerprint: str = ""
     port: int = 443
+    ping: int = 0
 
 
 class ServerCreate(Server):
     kind: Literal["regular", "premium", "censored"] = "regular"
+
+
+class ServerUpdate(BaseModel):
+    name: Optional[str] = None
+    host: Optional[str] = None
+    md5_fingerprint: Optional[str] = None
+    port: Optional[int] = None
+    ping: Optional[int] = None
 
 
 class ServersList(BaseModel):
@@ -96,3 +105,4 @@ class ServersList(BaseModel):
 class Highlights(BaseModel):
     totalUsers: int
     premiumUsers: int
+    blockedUsers: int

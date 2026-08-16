@@ -135,9 +135,9 @@ class VpnUserStore:
             self._write_all(users)
             return rec
 
-    def stats(self) -> tuple[int, int]:
+    def stats(self) -> tuple[int, int, int]:
         users = list(self._read_all().values())
-        return len(users), sum(1 for u in users if u.is_premium)
+        return len(users), sum(1 for u in users if u.is_premium), sum(1 for u in users if u.blocked)
 
     def create(self, username: str, password: str, max_speed: int, is_premium: bool) -> VpnRecord:
         with self._locked():
