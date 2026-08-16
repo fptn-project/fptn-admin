@@ -71,14 +71,16 @@ stored hash — same behaviour as the bot's `/token`.
 
 ```bash
 cp .env.demo .env    # optionally set ADMIN_PASSWORD, FPTN_CONFIGS_FOLDER, ...
-docker compose up --build fptn-admin-backend
+docker compose up --build
 ```
 
-Defaults work out of the box: admin `admin`/`admin` (forced to change on first
-login); the JWT signing secret is generated automatically and persisted in the
-data folder.
+Starts both services: the API on `http://localhost:8000` and the admin panel
+SPA (nginx-served) on `http://localhost:8080`. Defaults work out of the box:
+admin `admin`/`admin` (forced to change on first login); the JWT signing
+secret is generated automatically and persisted in the data folder.
 
-Docs at `http://localhost:8000/docs`.
+API docs at `http://localhost:8000/docs`. To run just the backend, add
+`fptn-admin-backend` to the command above.
 
 ### Local dev (without Docker)
 

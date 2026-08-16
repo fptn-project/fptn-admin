@@ -48,6 +48,10 @@ The dev server expects the [backend](../backend) to be running (see its
 README for `docker compose up`). Default login is `admin` / `admin`, which
 the app will immediately prompt you to change.
 
+There's also a `Dockerfile` (multi-stage: lint + typecheck + vitest, then
+`vite build`, served by nginx with SPA fallback) — `docker compose up` from
+the repo root builds and runs this alongside the backend, on `:8080`.
+
 ## Scripts
 
 | Command | Does |
@@ -62,7 +66,7 @@ the app will immediately prompt you to change.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `VITE_API_BASE_URL` | `http://localhost:8000/api/v1` | Base URL the frontend calls for the backend API |
+| `VITE_API_BASE_URL` | `http://<current hostname>:8000/api/v1` | Base URL the frontend calls for the backend API. Unset, it derives the host from `window.location.hostname` at runtime, so the built app works both on `localhost` and when reached over the network/LAN without a rebuild. |
 
 ## Project structure
 

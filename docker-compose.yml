@@ -20,10 +20,9 @@ services:
     ports:
       - "8000:8000"
 
-  # frontend:
-  #   build: ./frontend
-  #   container_name: fptn-admin-frontend
-  #   restart: unless-stopped
-  #   depends_on: [backend]
-  #   ports:
-  #     - "8080:80"
+  fptn-admin-frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on: [fptn-admin-backend]
+    ports:
+      - "8080:80"
