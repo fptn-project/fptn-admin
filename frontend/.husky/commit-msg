@@ -1,4 +1,6 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-npx --no-install commitlint --edit "$1"
+msg_file="$(pwd)/$1"
+cd "$(dirname "$0")/.." || exit 1
+node_modules/.bin/commitlint --edit "$msg_file"
