@@ -8,13 +8,18 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - USERS_FILE=/etc/fptn/users.list
       - ADMINS_FILE=/etc/fptn/admins.json
-      - MAX_USER_SPEED_LIMIT=${MAX_USER_SPEED_LIMIT:-30}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
-      - SERVICE_NAME=${SERVICE_NAME:-fptn}
       - ENABLE_BROTLI_COMPRESSION=${ENABLE_BROTLI_COMPRESSION:-false}
       - SERVERS_FILE=/etc/fptn/servers.json
       - PREMIUM_SERVERS_FILE=/etc/fptn/premium_servers.json
       - CENSORED_SERVERS_FILE=/etc/fptn/servers_censored_zone.json
+      - BOT_SETTINGS_FILE=/etc/fptn/bot_settings.json
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN:-}
+      - BOT_ENABLED=${BOT_ENABLED:-false}
+      - SERVICE_NAME=${SERVICE_NAME:-fptn}
+      - MAX_USER_SPEED_LIMIT=${MAX_USER_SPEED_LIMIT:-30}
+      - WELCOME_MESSAGE_EN=${WELCOME_MESSAGE_EN:-}
+      - WELCOME_MESSAGE_RU=${WELCOME_MESSAGE_RU:-}
     volumes:
       - ${FPTN_CONFIGS_FOLDER:-./compose-data}:/etc/fptn:rw
     ports:
@@ -23,6 +28,10 @@ services:
   fptn-admin-frontend:
     build: ./frontend
     restart: unless-stopped
+    init: true # quiets nginx's SIGCHLD noise from the healthcheck's wget
     depends_on: [fptn-admin-backend]
+    volumes:
+      - ${FPTN_CONFIGS_FOLDER:-./compose-data}:/etc/fptn:rw
     ports:
+      - "2663:443"
       - "8080:80"

@@ -3,7 +3,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, Query, status
 
 from app.config import settings
-from app.deps import server_store, vpn_store
+from app.deps import bot_settings_store, server_store, vpn_store
 from app.schemas import UserCreate, UserCreated, UsersPage, UserToken, UserUpdate, VpnUser
 from app.security import get_current_admin
 from app.stores.vpn_user_store import UserNotFound, VpnRecord
@@ -20,7 +20,7 @@ def _to_user(rec: VpnRecord) -> VpnUser:
 def _issue_token(username: str, password: str, is_premium: bool) -> str:
     servers = server_store.list()
     payload = build_token(
-        service_name=settings.service_name,
+        service_name=bot_settings_store.get().service_name,
         username=username,
         password=password,
         is_premium=is_premium,
@@ -73,7 +73,7 @@ def update_user(username: str, body: UserUpdate) -> VpnUser:
         max_speed=body.maxSpeed,
         blocked=body.blocked,
         premium=body.premiumAccess,
-        default_speed=settings.max_user_speed_limit,
+        default_speed=bot_settings_store.get().max_user_speed_limit,
     )
     return _to_user(rec)
 
@@ -102,7 +102,7 @@ def issue_token(username: str) -> UserToken:
     description="Create a user with the given password and return the fptn: access token for it.",
 )
 def create_user(body: UserCreate) -> UserCreated:
-    max_speed = body.maxSpeed if body.maxSpeed is not None else settings.max_user_speed_limit
+    max_speed = body.maxSpeed if body.maxSpeed is not None else bot_settings_store.get().max_user_speed_limit
     rec = vpn_store.create(body.username, body.password, max_speed, body.premiumAccess)
     token = _issue_token(rec.username, body.password, rec.is_premium)
     return UserCreated(

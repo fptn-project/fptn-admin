@@ -66,6 +66,9 @@ const emptyEditForm = {
 const IPV4_REGEX =
   /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/
 
+// Some keyboard layouts type "," where an IPv4 address needs ".".
+const normalizeHost = (value: string): string => value.replace(/,/g, '.')
+
 type KindFilter = ServerRowKind | 'all'
 
 const kindFilterTabs: { id: KindFilter; labelKey: string }[] = [
@@ -557,7 +560,10 @@ const Servers = (): ReactElement => {
               required
               value={form.host}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, host: event.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  host: normalizeHost(event.target.value)
+                }))
               }
               onBlur={(event) => {
                 const value = event.target.value.trim()
@@ -701,7 +707,10 @@ const Servers = (): ReactElement => {
               required
               value={editForm.host}
               onChange={(event) =>
-                setEditForm((prev) => ({ ...prev, host: event.target.value }))
+                setEditForm((prev) => ({
+                  ...prev,
+                  host: normalizeHost(event.target.value)
+                }))
               }
               onBlur={(event) => {
                 const value = event.target.value.trim()

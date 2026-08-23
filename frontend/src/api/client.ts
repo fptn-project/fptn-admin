@@ -1,6 +1,4 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ??
-  `http://${window.location.hostname}:8000/api/v1`
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
 const TOKEN_STORAGE_KEY = 'fptn-panel:token'
 const MUST_CHANGE_PASSWORD_KEY = 'fptn-panel:must-change-password'

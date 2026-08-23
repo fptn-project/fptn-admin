@@ -106,3 +106,25 @@ class Highlights(BaseModel):
     totalUsers: int
     premiumUsers: int
     blockedUsers: int
+
+
+class BotSettingsOut(BaseModel):
+    telegramToken: str
+    botEnabled: bool
+    botRunning: bool
+    maxUserSpeedLimit: int
+    serviceName: str
+    welcomeMessageEn: str
+    welcomeMessageRu: str
+
+
+class BotSettingsUpdate(BaseModel):
+    telegramToken: Optional[str] = None
+    maxUserSpeedLimit: Optional[int] = Field(default=None, ge=0)
+    serviceName: Optional[str] = None
+    welcomeMessageEn: Optional[str] = None
+    welcomeMessageRu: Optional[str] = None
+
+
+class BotEnabledUpdate(BaseModel):
+    enabled: bool

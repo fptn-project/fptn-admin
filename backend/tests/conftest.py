@@ -16,6 +16,7 @@ os.environ["ADMIN_LOGIN"] = "admin"
 os.environ["ADMIN_PASSWORD"] = "adminpass"
 os.environ["MAX_USER_SPEED_LIMIT"] = "30"
 os.environ["SERVICE_NAME"] = "fptn-test"
+os.environ["BOT_SETTINGS_FILE"] = os.path.join(_TMP, "bot_settings.json")
 
 
 @pytest.fixture(scope="session")
@@ -38,9 +39,13 @@ def auth(client):
 @pytest.fixture(autouse=True)
 def _clean_state():
     from app.deps import vpn_store
+    from app.telegram_bot import bot_runner
 
     open(vpn_store.path, "w").close()
     for name in ("SERVERS_FILE", "PREMIUM_SERVERS_FILE", "CENSORED_SERVERS_FILE"):
         with open(os.environ[name], "w") as f:
             f.write("[]")
+    if os.path.exists(os.environ["BOT_SETTINGS_FILE"]):
+        os.remove(os.environ["BOT_SETTINGS_FILE"])
     yield
+    bot_runner.stop()

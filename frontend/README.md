@@ -39,18 +39,24 @@ kept in local state.
 ## Getting started
 
 ```bash
-cp .env.example .env   # set VITE_API_BASE_URL if the backend isn't on :8000
 npm install
 npm run dev
 ```
 
 The dev server expects the [backend](../backend) to be running (see its
-README for `docker compose up`). Default login is `admin` / `admin`, which
-the app will immediately prompt you to change.
+README for `docker compose up`) on `:8000` — `/api` is proxied there by Vite
+(see `vite.config.ts`), so no `.env` setup is needed by default; copy
+`.env.example` to `.env` and set `VITE_API_BASE_URL` only if the backend runs
+elsewhere. Default login is `admin` / `admin`, which the app will immediately
+prompt you to change.
 
 There's also a `Dockerfile` (multi-stage: lint + typecheck + vitest, then
 `vite build`, served by nginx with SPA fallback) — `docker compose up` from
-the repo root builds and runs this alongside the backend, on `:8080`.
+the repo root builds and runs this alongside the backend, on `https://:2663`
+(plain `http://:8080` just redirects there, since browsers default to
+`http://` for a bare `host:port`). nginx generates a self-signed TLS cert on
+first start (persisted in the data folder) and proxies `/api/` to the
+backend, same as the Vite dev proxy.
 
 ## Scripts
 
@@ -66,7 +72,7 @@ the repo root builds and runs this alongside the backend, on `:8080`.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `VITE_API_BASE_URL` | `http://<current hostname>:8000/api/v1` | Base URL the frontend calls for the backend API. Unset, it derives the host from `window.location.hostname` at runtime, so the built app works both on `localhost` and when reached over the network/LAN without a rebuild. |
+| `VITE_API_BASE_URL` | `/api/v1` | Base URL the frontend calls for the backend API. Unset, it's a relative path proxied to the backend by Vite in dev or nginx in production — set this only to point at a backend on a different origin. |
 
 ## Project structure
 

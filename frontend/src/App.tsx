@@ -5,6 +5,7 @@ import RequireAuth from './components/RequireAuth'
 import Dashboard from './pages/Dashboard'
 import Users from './pages/Users'
 import Servers from './pages/Servers'
+import TelegramBot from './pages/TelegramBot'
 import GivePremiumAccess from './pages/GivePremiumAccess'
 import Login from './pages/Login'
 import ChangePassword from './pages/ChangePassword'
@@ -34,6 +35,7 @@ const App = (): ReactElement => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<Users />} />
           <Route path="/servers" element={<Servers />} />
+          <Route path="/telegram-bot" element={<TelegramBot />} />
           <Route path="/premium" element={<GivePremiumAccess />} />
           <Route path="*" element={<ComingSoon />} />
         </Route>

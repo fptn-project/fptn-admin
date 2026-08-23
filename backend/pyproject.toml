@@ -12,6 +12,7 @@ dependencies = [
     "pyjwt>=2.10,<3.0",
     "bcrypt>=4.2,<5.0",
     "brotli>=1.1,<2.0",
+    "python-telegram-bot>=21.4,<22.0",
 ]
 
 [tool.poetry]
@@ -45,6 +46,7 @@ disable = [
     "too-few-public-methods",
     "too-many-arguments",
     "too-many-positional-arguments",
+    "duplicate-code",
 ]
 
 [tool.pylint.basic]

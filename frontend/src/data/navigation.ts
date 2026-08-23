@@ -1,4 +1,10 @@
-import { LayoutDashboard, Server, Users, type LucideIcon } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Send,
+  Server,
+  Users,
+  type LucideIcon
+} from 'lucide-react'
 
 export interface NavLink {
   type: 'link'
@@ -44,5 +50,12 @@ export const navigation: NavItem[] = [
     labelKey: 'nav.servers',
     icon: Server,
     href: '/servers'
+  },
+  {
+    type: 'link',
+    id: 'telegramBot',
+    labelKey: 'nav.telegramBot',
+    icon: Send,
+    href: '/telegram-bot'
   }
 ]

@@ -34,6 +34,7 @@ class AdminStore:
 
     def _save(self, data: dict) -> None:
         self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        self.path.chmod(0o600)
 
     @staticmethod
     def _hash(password: str) -> str:

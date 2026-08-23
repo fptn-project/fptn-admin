@@ -5,7 +5,8 @@
   "nav": {
     "dashboard": "Dashboard",
     "users": "Users",
-    "servers": "Servers"
+    "servers": "Servers",
+    "telegramBot": "Telegram bot"
   },
   "header": {
     "toggleTheme": "Toggle theme",
@@ -134,6 +135,28 @@
     "usernameLabel": "Username:",
     "premiumGranted": "Premium granted",
     "giveAccessButton": "Give premium access"
+  },
+  "telegramBot": {
+    "title": "Telegram bot",
+    "subtitle": "Configure the bot users message to get their VPN access token.",
+    "statusRunning": "Running",
+    "statusStopped": "Stopped",
+    "enabledLabel": "Bot enabled",
+    "tokenLabel": "Telegram bot token",
+    "tokenCurrentMasked": "Current token: {{token}}",
+    "tokenCurrentEmpty": "No token set yet",
+    "tokenPlaceholder": "Paste a new token to replace it",
+    "serviceNameLabel": "Service name",
+    "maxUserSpeedLimitLabel": "Default speed limit (Mbps)",
+    "welcomeMessageEnLabel": "Welcome message (EN)",
+    "welcomeMessageRuLabel": "Welcome message (RU)",
+    "save": "Save",
+    "saving": "Saving…",
+    "saveSuccess": "Settings saved.",
+    "speedInvalid": "Speed limit must be a non-negative number.",
+    "loadError": "Failed to load settings.",
+    "saveError": "Failed to save settings.",
+    "toggleError": "Failed to change bot status."
   },
   "comingSoon": {
     "title": "Page not built yet",

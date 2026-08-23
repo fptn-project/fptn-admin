@@ -5,7 +5,8 @@
   "nav": {
     "dashboard": "Дашборд",
     "users": "Пользователи",
-    "servers": "Серверы"
+    "servers": "Серверы",
+    "telegramBot": "Телеграм-бот"
   },
   "header": {
     "toggleTheme": "Переключить тему",
@@ -136,6 +137,28 @@
     "usernameLabel": "Пользователь:",
     "premiumGranted": "Премиум выдан",
     "giveAccessButton": "Выдать премиум-доступ"
+  },
+  "telegramBot": {
+    "title": "Телеграм-бот",
+    "subtitle": "Настройки бота, через который пользователи получают токен доступа к VPN.",
+    "statusRunning": "Запущен",
+    "statusStopped": "Остановлен",
+    "enabledLabel": "Бот включён",
+    "tokenLabel": "Токен телеграм-бота",
+    "tokenCurrentMasked": "Текущий токен: {{token}}",
+    "tokenCurrentEmpty": "Токен ещё не задан",
+    "tokenPlaceholder": "Вставьте новый токен, чтобы заменить текущий",
+    "serviceNameLabel": "Название сервиса",
+    "maxUserSpeedLimitLabel": "Скорость по умолчанию (Мбит/с)",
+    "welcomeMessageEnLabel": "Приветственное сообщение (EN)",
+    "welcomeMessageRuLabel": "Приветственное сообщение (RU)",
+    "save": "Сохранить",
+    "saving": "Сохранение…",
+    "saveSuccess": "Настройки сохранены.",
+    "speedInvalid": "Скорость должна быть неотрицательным числом.",
+    "loadError": "Не удалось загрузить настройки.",
+    "saveError": "Не удалось сохранить настройки.",
+    "toggleError": "Не удалось изменить статус бота."
   },
   "comingSoon": {
     "title": "Страница ещё не готова",
