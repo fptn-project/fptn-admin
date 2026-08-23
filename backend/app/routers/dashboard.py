@@ -15,5 +15,5 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depend
     description="Total number of VPN users and how many of them are premium.",
 )
 def highlights() -> Highlights:
-    total, premium = vpn_store.stats()
-    return Highlights(totalUsers=total, premiumUsers=premium)
+    total, premium, blocked = vpn_store.stats()
+    return Highlights(totalUsers=total, premiumUsers=premium, blockedUsers=blocked)

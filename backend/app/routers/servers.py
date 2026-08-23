@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Response, status
 
 from app.deps import server_store
-from app.schemas import Server, ServerCreate, ServersList
+from app.schemas import Server, ServerCreate, ServersList, ServerUpdate
 from app.security import get_current_admin
 
 router = APIRouter(prefix="/servers", tags=["servers"], dependencies=[Depends(get_current_admin)])
@@ -32,8 +32,33 @@ def list_servers() -> ServersList:
     description="Add a server to one of the lists (kind: regular | premium | censored). These feed the access token.",
 )
 def add_server(body: ServerCreate) -> Server:
-    server = {"name": body.name, "host": body.host, "md5_fingerprint": body.md5_fingerprint, "port": body.port}
+    server = {
+        "name": body.name,
+        "host": body.host,
+        "md5_fingerprint": body.md5_fingerprint,
+        "port": body.port,
+        "ping": body.ping,
+    }
     server_store.add(body.kind, server)
+    return Server(**server)
+
+
+@router.put(
+    "/{kind}/{name}",
+    response_model=Server,
+    summary="Update a VPN server",
+    description="Partial update of a server's fields (host, fingerprint, port, ping) or rename it.",
+)
+def update_server(kind: Literal["regular", "premium", "censored"], name: str, body: ServerUpdate) -> Server:
+    server = server_store.update(
+        kind,
+        name,
+        new_name=body.name,
+        host=body.host,
+        md5_fingerprint=body.md5_fingerprint,
+        port=body.port,
+        ping=body.ping,
+    )
     return Server(**server)
 
 

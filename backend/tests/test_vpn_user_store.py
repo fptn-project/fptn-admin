@@ -114,4 +114,4 @@ def test_list_filters_search_pagination(store):
 def test_stats(store):
     store.create("100", "pw", 100, False)
     store.create("200", "pw", 250, True)
-    assert store.stats() == (2, 1)
+    assert store.stats() == (2, 1, 0)

@@ -13,14 +13,20 @@ class Settings(BaseSettings):
     premium_servers_file: Path = Path("/etc/fptn/premium_servers.json")
     censored_servers_file: Path = Path("/etc/fptn/servers_censored_zone.json")
 
-    service_name: str = "fptn"
     enable_brotli_compression: bool = False
+
+    # First-run seed for bot_settings.json, same as admin_login/password below.
+    telegram_token: str = ""
+    bot_enabled: bool = False
+    max_user_speed_limit: int = 30
+    service_name: str = "fptn"
+    welcome_message_en: str = ""
+    welcome_message_ru: str = ""
+    bot_settings_file: Path = Path("/etc/fptn/bot_settings.json")
 
     jwt_secret_file: Path = Path("/etc/fptn/jwt_secret")
     jwt_algorithm: str = "HS256"
     jwt_ttl_minutes: int = 60
-
-    max_user_speed_limit: int = 30
 
     admin_login: str | None = "admin"
     admin_password: str | None = "admin"
