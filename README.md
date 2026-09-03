@@ -35,18 +35,27 @@ With it you can:
 ## Screenshots
 
 **Sign in**
+
 <img src="docs/images/en/login.png" alt="Login screen" width="720"/>
+<br/>
 
 **Dashboard** — a quick look at how many users you have
+
 <img src="docs/images/en/dashboard.png" alt="Dashboard" width="720"/>
+<br/>
 
 **Users** — search, filter, block/unblock, or give premium access, right from the table
+
 <img src="docs/images/en/users.png" alt="Users list" width="720"/>
+<br/>
 
 **Servers** — the VPN servers handed out to your users
+
 <img src="docs/images/en/servers.png" alt="Servers list" width="720"/>
+<br/>
 
 **Telegram bot** — turn it on/off and write the welcome message, in English and Russian
+
 <img src="docs/images/en/telegram-bot.png" alt="Telegram bot settings" width="720"/>
 
 ---
