@@ -1,6 +1,6 @@
 services:
   fptn-admin-backend:
-    image: fptnvpn/fptn-admin-backend:latest
+    build: ./backend
     restart: unless-stopped
     environment:
       - JWT_TTL_MINUTES=60
@@ -10,8 +10,11 @@ services:
       - ENABLE_BROTLI_COMPRESSION=false
     volumes:
       - ./compose-data:/etc/fptn:rw
+    ports:
+      - "8000:8000"
+
   fptn-admin-frontend:
-    image: fptnvpn/fptn-admin-frontend:latest
+    build: ./frontend
     restart: unless-stopped
     init: true
     depends_on: [fptn-admin-backend]
@@ -19,6 +22,7 @@ services:
       - ./compose-data:/etc/fptn:rw
     ports:
       - "${PANEL_PORT:-2663}:443"
+
   fptn-server:
     image: fptnvpn/fptn-vpn-server:latest
     restart: unless-stopped
@@ -31,7 +35,7 @@ services:
       - SYS_RESOURCE
     sysctls:
       net.ipv4.ip_local_port_range: "6890 65535"
-      #net.ipv4.tcp_congestion_control: "bbr"
+      net.ipv4.tcp_congestion_control: "bbr"
       net.ipv4.tcp_rmem: "4096 131072 33554432"
       net.ipv4.tcp_wmem: "4096 65536 33554432"
     ulimits:

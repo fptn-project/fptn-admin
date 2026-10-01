@@ -15,22 +15,17 @@
 
 ## What is this?
 
-If you run your own [FPTN](https://github.com/batchar2/fptn) VPN server, at some
-point you need a way to see who's using it, add or remove VPN servers, and run
-the Telegram bot that gives people their access token — without editing config
-files by hand over SSH.
-
-**FPTN Admin Panel** is a website you open in your browser that does all of
-that for you. No command line, no code — just click buttons.
+**FPTN Admin Panel** is a web dashboard for running an
+[FPTN](https://github.com/batchar2/fptn) VPN server from your browser — manage
+users, servers and the Telegram bot without editing config files over SSH.
 
 With it you can:
 
-- 👥 See every VPN user, search/filter them, block or unblock, give premium access
-- 🖥️ Add, edit, and remove the VPN servers your users connect to
-- 🤖 Turn your Telegram bot on or off, and edit the message it sends new users
-- 📊 See at a glance how many people use your service
-- 🌍 Switch between English and Russian with one click
-- 🌗 Light and dark mode
+- 👥 **Users** — view, search and filter, block or unblock, grant premium access
+- 🖥️ **Servers** — add, edit and remove the VPN servers your clients connect to
+- 🤖 **Telegram bot** — enable or disable it and edit its welcome message
+- 📊 **Dashboard** — total, premium and blocked users at a glance
+- 🌍 **English & Russian**, with light and dark themes
 
 ## Screenshots
 
@@ -62,62 +57,116 @@ With it you can:
 
 ## How to install it
 
-You only need one thing on your computer or server:
-**[Docker](https://www.docker.com/)** (it comes with Docker Compose built in).
+The included `docker-compose.yml` runs the whole stack — the FPTN VPN server,
+this admin panel (backend + frontend), and the Telegram bot — from prebuilt
+images on Docker Hub. You need a **Linux** host with
+**[Docker](https://docs.docker.com/engine/install/)** and port **443/tcp** open.
 
-1. **Download this project**
+1. **Get the files**
 
    ```bash
-   git clone https://github.com/fptn-project/fptn-admin.git
-   cd fptn-admin
+   git clone https://github.com/fptn-project/fptn-admin.git && cd fptn-admin
    ```
 
-2. **Create your settings file**
+2. **Create your `.env`**
 
    ```bash
    cp .env.demo .env
    ```
 
-   You don't have to change anything in it — the defaults just work for
-   trying it out.
+   The defaults work out of the box; every option is documented in `.env.demo`.
 
-3. **Start everything**
+3. **Create the VPN server certificate**
 
    ```bash
-   docker compose up --build
+   docker compose run --rm fptn-server sh -c "cd /etc/fptn && openssl genrsa -out server.key 2048"
+   docker compose run --rm fptn-server sh -c "cd /etc/fptn && openssl req -new -x509 -key server.key -out server.crt -days 365 -subj '/CN=fptn'"
    ```
 
-   This builds and starts two things: the panel itself, and the small server
-   that powers it. The first run takes a few minutes; after that it's much
-   faster.
+   Print its fingerprint — you'll enter it in the panel in step 6:
 
-4. **Open the panel in your browser**
+   ```bash
+   docker compose run --rm fptn-server sh -c "openssl x509 -noout -fingerprint -md5 -in /etc/fptn/server.crt | cut -d'=' -f2 | tr -d ':' | tr 'A-F' 'a-f' | xargs -I {} echo 'MD5 Fingerprint: {}'"
+   ```
 
-   Go to **https://localhost:2663**
+4. **Start**
 
-   Your browser will warn that the connection "is not private" — that's
-   expected. The panel creates its own certificate the first time it starts,
-   and browsers don't trust self-signed certificates by default. Click
-   "Advanced" → "Proceed anyway" (the exact wording depends on your browser).
+   ```bash
+   docker compose up -d
+   ```
 
-5. **Log in**
+   Check it's up with `docker compose ps`.
 
-   - Login: `admin`
-   - Password: `admin`
+5. **Open the panel and log in**
 
-   You'll be asked to set a new password immediately — that's intentional,
-   so nobody is left running with the default one.
+   Go to **https://&lt;server-ip&gt;:2663**, accept the self-signed certificate
+   warning, and log in with `admin` / `admin`. Set a new password when asked.
 
-That's it — you're in.
+6. **Add this server, then your users**
 
-### Stopping it
+   In the panel: **Servers → Add server** (host, port `443`, and the fingerprint
+   from step 3), then **Users → Add user** — the connection token (`fptn:…`) is
+   shown on creation; paste it into the FPTN client.
+
+7. **Enable the Telegram bot** *(optional)*
+
+   In the panel: **Settings** — paste your bot token and turn the bot on. It
+   runs inside the backend, so no extra container or restart is needed.
+
+## Configuration
+
+All settings live in `.env` (copied from `.env.demo`, where every option is
+documented inline). The defaults work out of the box.
+
+**FPTN VPN server**
+
+| Variable | Default | What it does |
+|---|---|---|
+| `SERVER_EXTERNAL_IPS` | — | Public IPv4/IPv6 of the server, comma-separated (optional). |
+| `FPTN_PORT` | `443` | Public TCP port clients connect to (looks like HTTPS). |
+| `ENABLE_DETECT_PROBING` | `true` | Detect non-FPTN clients / probing at the TLS handshake. |
+| `ALLOWED_SNI_LIST` | see `.env.demo` | Decoy domains scanner traffic is proxied to. |
+| `ENABLE_ADS_FILTER`, `ADS_BLOCKLIST_URLS` | `true` | Block ad/tracker domains by SNI. |
+| `ENABLE_DOMAIN_BLACKLIST_FILTER`, `DOMAIN_BLACKLIST_URLS` | `true` | Block blacklisted domains by SNI + resolved IPs. |
+| `ENABLE_TORRENT_FILTER` | `true` | Block BitTorrent traffic. |
+| `ENABLE_SPAM_FILTER` | `true` | Block mail/telnet/SMB/amplification ports. |
+| `MAX_ACTIVE_SESSIONS_PER_USER` | `3` | Max simultaneous sessions per VPN user. |
+| `MTU_SIZE` | `1400` | Max IP packet size. |
+| `USING_DNS_SERVER`, `DNS_*` | `unbound` | DNS resolver handed to clients. |
+| `USE_REMOTE_SERVER_AUTH`, `REMOTE_SERVER_AUTH_*` | `false` | Cluster mode: delegate auth to a master server. |
+| `PROMETHEUS_SECRET_ACCESS_KEY` | — | Key for Prometheus to read server metrics. |
+
+**Admin panel**
+
+| Variable | Default | What it does |
+|---|---|---|
+| `PANEL_PORT` | `2663` | Host port for the web UI (HTTPS). |
+
+Other panel settings (admin `admin`/`admin`, JWT TTL, CORS, brotli) are
+hardcoded in `docker-compose.yml`; the shared config folder is `./compose-data`.
+The Telegram bot (token, on/off, service name, speed limit, welcome messages)
+is configured on the panel's **Settings** page, not via `.env`.
+
+## Updating and stopping
 
 ```bash
-docker compose down
+docker compose down                           # stop (data in ./compose-data is kept)
+docker compose pull && docker compose up -d   # update to the latest images
 ```
 
-Nothing gets deleted: your users, servers, and settings stay saved on disk.
-Start it again any time with `docker compose up`.
+## Development (build from source)
+
+`docker-compose.dev.yml` runs the same stack but builds the panel
+(backend + frontend) from source instead of pulling the images:
+
+```bash
+cp .env.demo .env
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Open **https://localhost:2663** and log in with `admin` / `admin`. To run only
+the panel (no VPN server), name the services:
+`docker compose -f docker-compose.dev.yml up --build fptn-admin-backend fptn-admin-frontend`.
 
 ---
 
@@ -128,9 +177,10 @@ Start it again any time with `docker compose up`.
 
 ```
 fptn-admin/
-  backend/     FastAPI service (Poetry) — REST API + the Telegram bot
-  frontend/    admin panel SPA (React + TypeScript + Vite)
-  docker-compose.yml
+  backend/                FastAPI service (Poetry) — REST API + the Telegram bot
+  frontend/               admin panel SPA (React + TypeScript + Vite)
+  docker-compose.yml      full stack from prebuilt images
+  docker-compose.dev.yml  same stack, panel built from source
 ```
 
 See [backend](backend) and [frontend](frontend) for stack details, local
@@ -200,35 +250,30 @@ the stored hash — same behaviour as the bot's `/token`.
 
 ### Telegram bot
 
-`app/telegram_bot.py` runs the bot in-process, as a background thread — no
-separate bot container. `/api/v1/settings` (`telegramToken`, `botEnabled`)
-starts/stops it; `/start` and `/token` call the same `vpn_store`/`server_store`
-the REST API uses, so the bot and the panel write `users.list` through the
-same file lock.
+The bot runs inside the backend — no separate container. To enable it:
 
-All of `telegramToken`, `botEnabled`, `maxUserSpeedLimit`, `serviceName` and
-the welcome messages live in `bot_settings.json` (inside
-`FPTN_CONFIGS_FOLDER`) and are edited through the Settings page. The matching
-env vars (`TELEGRAM_TOKEN`, `BOT_ENABLED`, ...) are only a first-run seed —
-same as `ADMIN_LOGIN`/`ADMIN_PASSWORD` — used once when that file doesn't
-exist yet; once it does, the file is authoritative and the env vars are
-ignored.
+1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the token.
+2. In the panel open **Settings**, paste the token, turn the bot on, and save —
+   it starts right away, no restart needed.
+3. The same page sets the service name, default speed limit and the welcome
+   messages (EN/RU).
+
+Users then message the bot with `/start` and `/token` — it creates them in the
+same `users.list` as the panel and replies with their connection token.
 
 ### HTTPS
 
 The SPA is served over HTTPS with a self-signed certificate, generated on
 first start and persisted as `certs/fullchain.pem` / `certs/privkey.pem`
-inside `FPTN_CONFIGS_FOLDER` — that's why browsers warn about it. Bring your
-own certificate (reverse proxy, Let's Encrypt, ...) in front of it for a real
-deployment. Plain `http://localhost:8080` just redirects to the HTTPS port,
-since browsers default to `http://` when you type a bare `host:port`. nginx
-also proxies `/api/` to the backend, so the SPA only ever talks to its own
-origin.
+inside the `/etc/fptn` config directory — that's why browsers warn about it.
+Bring your own certificate (reverse proxy, Let's Encrypt, ...) in front of it
+for a real deployment. nginx also proxies `/api/` to the backend, so the SPA
+only ever talks to its own origin.
 
 ### Run just the backend
 
 ```bash
-docker compose up --build fptn-admin-backend
+docker compose -f docker-compose.dev.yml up --build fptn-admin-backend
 ```
 
 ### Local dev (without Docker)

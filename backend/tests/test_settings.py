@@ -21,8 +21,8 @@ def test_get_settings_defaults(client, auth):
     assert body["botRunning"] is False
     assert body["serviceName"] == "fptn-test"
     assert body["maxUserSpeedLimit"] == 30
-    assert body["welcomeMessageEn"] == ""
-    assert body["welcomeMessageRu"] == ""
+    assert "FPTN" in body["welcomeMessageEn"]
+    assert "FPTN" in body["welcomeMessageRu"]
 
 
 def test_update_settings_partial(client, auth):

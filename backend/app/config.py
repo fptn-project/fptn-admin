@@ -20,8 +20,20 @@ class Settings(BaseSettings):
     bot_enabled: bool = False
     max_user_speed_limit: int = 30
     service_name: str = "fptn"
-    welcome_message_en: str = ""
-    welcome_message_ru: str = ""
+    welcome_message_en: str = (
+        "⚡ Welcome to the FPTN bot! ⚡\n"
+        "Use this bot to get a VPN access token or reset it.\n\n"
+        "🌐 You can download the client from the "
+        "[official project website](https://storage.googleapis.com/fptn.org/index.html).\n\n"
+        "👉 To get your connection token, just type the command: /token"
+    )
+    welcome_message_ru: str = (
+        "⚡ Добро пожаловать в бот FPTN! ⚡\n"
+        "Этот бот позволяет получить токен доступа к VPN или сбросить его.\n\n"
+        "🌐 Клиент можно скачать с "
+        "[официального сайта проекта](https://storage.googleapis.com/fptn.org/index.html).\n\n"
+        "👉 Чтобы получить токен для подключения, просто введите команду: /token"
+    )
     bot_settings_file: Path = Path("/etc/fptn/bot_settings.json")
 
     jwt_secret_file: Path = Path("/etc/fptn/jwt_secret")
