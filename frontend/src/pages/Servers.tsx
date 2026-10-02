@@ -109,11 +109,21 @@ const KindBadge = ({ kind }: { kind: ServerRowKind }): ReactElement => {
   )
 }
 
-const PingBadge = ({ ping }: { ping: number }): ReactElement => {
+export const PingBadge = ({ ping }: { ping: number }): ReactElement => {
+  const { t } = useTranslation()
+
+  if (ping < 0) {
+    return (
+      <span className="text-sm tabular-nums text-destructive">
+        {t('servers.pingUnreachable')}
+      </span>
+    )
+  }
+
   const className =
-    ping >= 150
+    ping > 600
       ? 'text-destructive'
-      : ping >= 80
+      : ping >= 200
       ? 'text-warning'
       : 'text-success'
 
@@ -142,31 +152,41 @@ const Servers = (): ReactElement => {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setError(null)
 
-    listServers()
-      .then((data) => {
-        if (cancelled) return
-        setServers([
-          ...data.regular.map((s) => ({ ...s, kind: 'regular' as const })),
-          ...data.premium.map((s) => ({ ...s, kind: 'premium' as const })),
-          ...data.censoredZone.map((s) => ({
-            ...s,
-            kind: 'censoredZone' as const
-          }))
-        ])
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err instanceof ApiError ? err.message : t('servers.loadError'))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    const fetchServers = (showLoading: boolean): void => {
+      if (showLoading) setLoading(true)
+      setError(null)
+
+      listServers()
+        .then((data) => {
+          if (cancelled) return
+          setServers([
+            ...data.regular.map((s) => ({ ...s, kind: 'regular' as const })),
+            ...data.premium.map((s) => ({ ...s, kind: 'premium' as const })),
+            ...data.censoredZone.map((s) => ({
+              ...s,
+              kind: 'censoredZone' as const
+            }))
+          ])
+        })
+        .catch((err) => {
+          if (cancelled) return
+          setError(
+            err instanceof ApiError ? err.message : t('servers.loadError')
+          )
+        })
+        .finally(() => {
+          if (!cancelled && showLoading) setLoading(false)
+        })
+    }
+
+    fetchServers(true)
+    // Keeps ping fresh — the backend remeasures every 10s too.
+    const intervalId = window.setInterval(() => fetchServers(false), 10000)
 
     return () => {
       cancelled = true
+      window.clearInterval(intervalId)
     }
   }, [])
 

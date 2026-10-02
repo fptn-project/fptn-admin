@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
+import threading
 from pathlib import Path
+
+logger = logging.getLogger("fptn_admin.server_store")
 
 
 class ServerExists(Exception):
@@ -25,6 +29,7 @@ class ServerStore:
         }
         for path in self._files.values():
             path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
 
     def _read(self, kind: str) -> list[dict]:
         path = self._files[kind]
@@ -40,22 +45,25 @@ class ServerStore:
         self._files[kind].write_text(json.dumps(servers, indent=4), encoding="utf-8")
 
     def list(self) -> dict[str, list[dict]]:
-        return {kind: self._read(kind) for kind in self._files}
+        with self._lock:
+            return {kind: self._read(kind) for kind in self._files}
 
     def add(self, kind: str, server: dict) -> dict:
-        servers = self._read(kind)
-        if any(s.get("name") == server["name"] for s in servers):
-            raise ServerExists(server["name"])
-        servers.append(server)
-        self._write(kind, servers)
-        return server
+        with self._lock:
+            servers = self._read(kind)
+            if any(s.get("name") == server["name"] for s in servers):
+                raise ServerExists(server["name"])
+            servers.append(server)
+            self._write(kind, servers)
+            return server
 
     def delete(self, kind: str, name: str) -> None:
-        servers = self._read(kind)
-        remaining = [s for s in servers if s.get("name") != name]
-        if len(remaining) == len(servers):
-            raise ServerNotFound(name)
-        self._write(kind, remaining)
+        with self._lock:
+            servers = self._read(kind)
+            remaining = [s for s in servers if s.get("name") != name]
+            if len(remaining) == len(servers):
+                raise ServerNotFound(name)
+            self._write(kind, remaining)
 
     def update(
         self,
@@ -68,23 +76,45 @@ class ServerStore:
         port: int | None,
         ping: int | None,
     ) -> dict:
-        servers = self._read(kind)
-        server = next((s for s in servers if s.get("name") == name), None)
-        if server is None:
-            raise ServerNotFound(name)
+        with self._lock:
+            servers = self._read(kind)
+            server = next((s for s in servers if s.get("name") == name), None)
+            if server is None:
+                raise ServerNotFound(name)
 
-        if new_name and new_name != name:
-            if any(s.get("name") == new_name for s in servers):
-                raise ServerExists(new_name)
-            server["name"] = new_name
-        if host is not None:
-            server["host"] = host
-        if md5_fingerprint is not None:
-            server["md5_fingerprint"] = md5_fingerprint
-        if port is not None:
-            server["port"] = port
-        if ping is not None:
-            server["ping"] = ping
+            if new_name and new_name != name:
+                if any(s.get("name") == new_name for s in servers):
+                    raise ServerExists(new_name)
+                server["name"] = new_name
+            if host is not None:
+                server["host"] = host
+            if md5_fingerprint is not None:
+                server["md5_fingerprint"] = md5_fingerprint
+            if port is not None:
+                server["port"] = port
+            if ping is not None:
+                server["ping"] = ping
 
-        self._write(kind, servers)
-        return server
+            self._write(kind, servers)
+            return server
+
+    def update_pings(self, pings: dict[str, dict[str, int]]) -> None:
+        """Bulk-apply {kind: {server_name: ping_ms}}, one read+write per kind.
+        A failure on one kind (e.g. a permission error on one file) must not
+        block the others, so each kind's write is isolated."""
+        with self._lock:
+            for kind, kind_pings in pings.items():
+                if not kind_pings:
+                    continue
+                try:
+                    servers = self._read(kind)
+                    changed = False
+                    for server in servers:
+                        new_ping = kind_pings.get(server.get("name"))
+                        if new_ping is not None and server.get("ping") != new_ping:
+                            server["ping"] = new_ping
+                            changed = True
+                    if changed:
+                        self._write(kind, servers)
+                except OSError:
+                    logger.exception("Failed to persist pings for %r", kind)

@@ -43,6 +43,21 @@ def test_create_defaults_and_duplicate(client, auth):
     assert dup.status_code == 409
 
 
+def test_create_without_password_generates_one(client, auth):
+    resp = client.post("/api/v1/users", headers=auth, json={"username": "100"})
+    assert resp.status_code == 201
+    body = resp.json()
+    assert "password" not in body
+    assert body["token"].startswith("fptn:")
+
+
+def test_granting_premium_via_api_raises_speed_to_300(client, auth):
+    client.post("/api/v1/users", headers=auth, json={"username": "300", "password": "pw", "maxSpeed": 20})
+
+    resp = client.put("/api/v1/users/300", headers=auth, json={"premiumAccess": True})
+    assert resp.json() == {"username": "300", "blocked": False, "premiumAccess": True, "maxSpeed": 300}
+
+
 def test_block_then_unblock(client, auth):
     client.post("/api/v1/users", headers=auth, json={"username": "100", "password": "pw", "maxSpeed": 100})
 
@@ -127,6 +142,70 @@ def test_change_password_requires_auth(client):
         json={"currentPassword": "x", "newPassword": "brandnew1"},
     )
     assert resp.status_code == 401
+
+
+def test_me_returns_current_username(client, auth):
+    resp = client.get("/api/v1/auth/me", headers=auth)
+    assert resp.status_code == 200
+    assert resp.json() == {"username": "admin"}
+
+
+def test_update_profile_renames_and_changes_password(client, auth):
+    client.post("/api/v1/auth/register", headers=auth, json={"username": "prof1", "password": "origpass"})
+    token = client.post("/api/v1/auth/login", json={"username": "prof1", "password": "origpass"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    updated = client.put(
+        "/api/v1/auth/profile",
+        headers=headers,
+        json={"currentPassword": "origpass", "newUsername": "prof1-renamed", "newPassword": "brandnew1"},
+    )
+    assert updated.status_code == 200
+    new_token = updated.json()["access_token"]
+
+    assert client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {new_token}"}).json() == {
+        "username": "prof1-renamed"
+    }
+    assert client.post("/api/v1/auth/login", json={"username": "prof1", "password": "origpass"}).status_code == 401
+    assert (
+        client.post("/api/v1/auth/login", json={"username": "prof1-renamed", "password": "brandnew1"}).status_code
+        == 200
+    )
+
+
+def test_update_profile_rejects_wrong_current_password(client, auth):
+    client.post("/api/v1/auth/register", headers=auth, json={"username": "prof2", "password": "origpass"})
+    token = client.post("/api/v1/auth/login", json={"username": "prof2", "password": "origpass"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.put(
+        "/api/v1/auth/profile",
+        headers=headers,
+        json={"currentPassword": "wrong", "newUsername": "prof2-renamed"},
+    )
+    assert resp.status_code == 401
+
+
+def test_update_profile_rejects_duplicate_username(client, auth):
+    client.post("/api/v1/auth/register", headers=auth, json={"username": "prof3", "password": "origpass"})
+    token = client.post("/api/v1/auth/login", json={"username": "prof3", "password": "origpass"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.put(
+        "/api/v1/auth/profile",
+        headers=headers,
+        json={"currentPassword": "origpass", "newUsername": "admin"},
+    )
+    assert resp.status_code == 409
+
+
+def test_update_profile_requires_some_change(client, auth):
+    resp = client.put(
+        "/api/v1/auth/profile",
+        headers=auth,
+        json={"currentPassword": "adminpass"},
+    )
+    assert resp.status_code == 400
 
 
 def test_dashboard_highlights(client, auth):

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     jwt_secret_file: Path = Path("/etc/fptn/jwt_secret")
     jwt_algorithm: str = "HS256"
-    jwt_ttl_minutes: int = 60
+    jwt_ttl_minutes: int = 60 * 24 * 7
 
     admin_login: str | None = "admin"
     admin_password: str | None = "admin"

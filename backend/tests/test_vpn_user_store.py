@@ -69,6 +69,32 @@ def test_premium_toggle(store):
     assert store.get("100").is_premium is True
 
 
+def test_granting_premium_raises_speed_to_the_300_floor(store):
+    store.create("100", "pw", 20, False)
+    _update(store, "100", premium=True)
+    assert store.get("100").speed == 300
+
+
+def test_granting_premium_does_not_lower_an_already_higher_speed(store):
+    store.create("100", "pw", 500, False)
+    _update(store, "100", premium=True)
+    assert store.get("100").speed == 500
+
+
+def test_granting_premium_does_not_unblock_a_blocked_user(store):
+    store.create("100", "pw", 100, False)
+    _update(store, "100", blocked=True)
+    _update(store, "100", premium=True)
+    rec = store.get("100")
+    assert rec.blocked is True and rec.speed == 0
+
+
+def test_revoking_premium_does_not_change_speed(store):
+    store.create("100", "pw", 50, True)
+    _update(store, "100", premium=False)
+    assert store.get("100").speed == 50
+
+
 def test_rename(store):
     store.create("100", "pw", 100, False)
     _update(store, "100", new_username="200")

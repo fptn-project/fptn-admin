@@ -6,7 +6,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Sparkles,
+  Settings,
   Sun
 } from 'lucide-react'
 import { useLayout } from './LayoutContext'
@@ -19,15 +19,21 @@ const Header = (): ReactElement => {
   const { t } = useTranslation()
   const { collapsed, toggleCollapsed, openMobile } = useLayout()
   const { mode, toggleMode } = useTheme()
-  const { logout } = useAuth()
+  const { logout, username } = useAuth()
   const navigate = useNavigate()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const initials = username ? username.slice(0, 2).toUpperCase() : '··'
 
   const handleLogout = (): void => {
     setUserMenuOpen(false)
     logout()
     navigate('/login', { replace: true })
+  }
+
+  const handleOpenProfileSettings = (): void => {
+    setUserMenuOpen(false)
+    navigate('/profile')
   }
 
   useEffect(() => {
@@ -62,20 +68,20 @@ const Header = (): ReactElement => {
         </Link>
       </div>
 
-      <div className="flex items-center px-4 lg:hidden">
+      <div className="flex min-w-0 items-center px-4 lg:hidden">
         <Button
           variant="ghost"
           size="icon"
           onClick={openMobile}
-          className="mr-2 text-muted-foreground hover:text-foreground"
+          className="mr-2 flex-shrink-0 text-muted-foreground hover:text-foreground"
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+        <Link to="/" className="flex min-w-0 items-center gap-2">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             F
           </span>
-          <span className="text-lg font-semibold text-foreground">
+          <span className="hidden truncate whitespace-nowrap text-lg font-semibold text-foreground sm:inline">
             FPTN panel
           </span>
         </Link>
@@ -95,11 +101,7 @@ const Header = (): ReactElement => {
           )}
         </Button>
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Button size="sm" onClick={() => navigate('/premium')}>
-            <Sparkles className="h-4 w-4" />
-            {t('header.givePremiumAccess')}
-          </Button>
+        <div className="ml-auto flex flex-shrink-0 items-center gap-1 sm:gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -122,14 +124,24 @@ const Header = (): ReactElement => {
               className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-orange-400 to-rose-500 ring-2 ring-background"
             >
               <span className="flex h-full w-full items-center justify-center text-xs font-semibold text-white">
-                AD
+                {initials}
               </span>
             </button>
 
             {userMenuOpen && (
               <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl">
                 <div className="border-b border-border p-4">
-                  <p className="font-semibold">admin</p>
+                  <p className="font-semibold">{username ?? '…'}</p>
+                </div>
+                <div className="py-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenProfileSettings}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>{t('header.profileSettings')}</span>
+                  </button>
                 </div>
                 <div className="border-t border-border p-3">
                   <button

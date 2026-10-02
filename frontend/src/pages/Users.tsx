@@ -3,13 +3,16 @@ import {
   Ban,
   Check,
   Gauge,
+  KeyRound,
   Pencil,
+  Plus,
   Search,
   Sparkles,
   X,
   type LucideIcon
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -18,16 +21,33 @@ import {
   TableHeader,
   TableRow
 } from '../components/ui/Table'
+import Button from '../components/ui/Button'
+import Modal from '../components/ui/Modal'
 import Pagination from '../components/ui/Pagination'
 import Spinner from '../components/ui/Spinner'
 import { ApiError } from '../api/client'
 import { getHighlights } from '../api/dashboard'
-import { listUsers, updateUser, VpnUser, UserFilter } from '../api/users'
+import {
+  createUser,
+  issueToken,
+  listUsers,
+  updateUser,
+  VpnUser,
+  UserFilter
+} from '../api/users'
 
 const PAGE_SIZE = 20
 const MIN_SPEED = 1
 const MAX_SPEED = 300
+const DEFAULT_NEW_USER_SPEED = 20
 const SEARCH_DEBOUNCE_MS = 300
+const USERNAME_REGEX = /^[a-zA-Z0-9]+$/
+
+const emptyCreateForm = {
+  username: '',
+  maxSpeed: String(DEFAULT_NEW_USER_SPEED),
+  premiumAccess: false
+}
 
 const filterTabs: { id: UserFilter; labelKey: string }[] = [
   { id: 'all', labelKey: 'users.filterAll' },
@@ -76,6 +96,7 @@ const ToggleBadge = ({
 
 const Users = (): ReactElement => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [users, setUsers] = useState<VpnUser[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -93,6 +114,20 @@ const Users = (): ReactElement => {
   const [editValue, setEditValue] = useState('')
 
   const [pendingToggle, setPendingToggle] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createForm, setCreateForm] = useState(emptyCreateForm)
+  const [createFormError, setCreateFormError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [createdToken, setCreatedToken] = useState<string | null>(null)
+  const [tokenCopied, setTokenCopied] = useState(false)
+
+  const [issueTarget, setIssueTarget] = useState<VpnUser | null>(null)
+  const [issuedToken, setIssuedToken] = useState<string | null>(null)
+  const [issuedTokenCopied, setIssuedTokenCopied] = useState(false)
+  const [issuing, setIssuing] = useState(false)
+  const [issueError, setIssueError] = useState<string | null>(null)
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -129,7 +164,7 @@ const Users = (): ReactElement => {
     return () => {
       cancelled = true
     }
-  }, [page, search, tab, t])
+  }, [page, search, tab, t, reloadToken])
 
   const refreshStats = (): void => {
     getHighlights()
@@ -220,6 +255,104 @@ const Users = (): ReactElement => {
     }
   }
 
+  const openCreateModal = (): void => {
+    setCreateForm(emptyCreateForm)
+    setCreateFormError(null)
+    setCreatedToken(null)
+    setTokenCopied(false)
+    setCreateModalOpen(true)
+  }
+
+  const closeCreateModal = (): void => {
+    if (creating) return
+    setCreateModalOpen(false)
+    setCreatedToken(null)
+    setTokenCopied(false)
+  }
+
+  const handleCopyToken = (): void => {
+    if (!createdToken) return
+    void navigator.clipboard.writeText(createdToken)
+    setTokenCopied(true)
+  }
+
+  const handleCreateUser = async (
+    event: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
+    event.preventDefault()
+    const username = createForm.username.trim()
+    if (!username) {
+      setCreateFormError(t('users.usernameRequired'))
+      return
+    }
+    if (!USERNAME_REGEX.test(username)) {
+      setCreateFormError(t('users.usernameInvalid'))
+      return
+    }
+
+    const maxSpeed = Math.round(Number(createForm.maxSpeed))
+    if (!Number.isFinite(maxSpeed) || maxSpeed < MIN_SPEED) {
+      setCreateFormError(t('users.speedInvalid'))
+      return
+    }
+
+    setCreating(true)
+    setCreateFormError(null)
+    try {
+      const created = await createUser({
+        username,
+        maxSpeed,
+        premiumAccess: createForm.premiumAccess
+      })
+      setCreatedToken(created.token)
+      setReloadToken((prev) => prev + 1)
+      refreshStats()
+    } catch (err) {
+      setCreateFormError(
+        err instanceof ApiError ? err.message : t('users.createError')
+      )
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const openIssueTokenModal = (user: VpnUser): void => {
+    setIssueTarget(user)
+    setIssuedToken(null)
+    setIssuedTokenCopied(false)
+    setIssueError(null)
+  }
+
+  const closeIssueTokenModal = (): void => {
+    if (issuing) return
+    setIssueTarget(null)
+    setIssuedToken(null)
+    setIssuedTokenCopied(false)
+    setIssueError(null)
+  }
+
+  const handleCopyIssuedToken = (): void => {
+    if (!issuedToken) return
+    void navigator.clipboard.writeText(issuedToken)
+    setIssuedTokenCopied(true)
+  }
+
+  const handleIssueToken = async (): Promise<void> => {
+    if (!issueTarget) return
+    setIssuing(true)
+    setIssueError(null)
+    try {
+      const result = await issueToken(issueTarget.username)
+      setIssuedToken(result.token)
+    } catch (err) {
+      setIssueError(
+        err instanceof ApiError ? err.message : t('users.issueTokenError')
+      )
+    } finally {
+      setIssuing(false)
+    }
+  }
+
   const statsList = [
     { label: t('users.statsTotal'), value: stats.total },
     { label: t('users.statsBlocked'), value: stats.blocked },
@@ -234,7 +367,16 @@ const Users = (): ReactElement => {
             {t('users.title')}
           </h1>
         </div>
-        <div className="flex items-center gap-3"></div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/premium')}>
+            <Sparkles className="h-4 w-4" />
+            {t('header.givePremiumAccess')}
+          </Button>
+          <Button onClick={openCreateModal}>
+            <Plus className="h-4 w-4" />
+            {t('users.addUser')}
+          </Button>
+        </div>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -314,12 +456,15 @@ const Users = (): ReactElement => {
               {t('users.colMaxSpeed')}
             </TableHead>
             <TableHead className="w-[140px]">{t('users.colBlocked')}</TableHead>
+            <TableHead className="w-[150px]">
+              {t('users.colIssueToken')}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading && (
             <TableRow>
-              <TableCell colSpan={4} className="py-10">
+              <TableCell colSpan={5} className="py-10">
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Spinner className="h-4 w-4" />
                   {t('users.loading')}
@@ -330,7 +475,7 @@ const Users = (): ReactElement => {
           {!loading && users.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={4}
+                colSpan={5}
                 className="py-10 text-center text-sm text-muted-foreground"
               >
                 {search
@@ -434,6 +579,20 @@ const Users = (): ReactElement => {
                     onClick={() => void toggleField(user, 'blocked')}
                   />
                 </TableCell>
+
+                <TableCell>
+                  <button
+                    type="button"
+                    onClick={() => openIssueTokenModal(user)}
+                    aria-label={t('users.issueTokenFor', {
+                      name: user.username
+                    })}
+                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <KeyRound className="h-4 w-4" />
+                    {t('users.issueToken')}
+                  </button>
+                </TableCell>
               </TableRow>
             ))}
         </TableBody>
@@ -455,6 +614,205 @@ const Users = (): ReactElement => {
           onPageChange={setPage}
         />
       </div>
+
+      <Modal
+        open={createModalOpen}
+        onClose={closeCreateModal}
+        title={t('users.addUser')}
+      >
+        <form
+          onSubmit={(event) => void handleCreateUser(event)}
+          className="mx-auto max-w-md space-y-4"
+        >
+          <div>
+            <label
+              htmlFor="user-username"
+              className="mb-1.5 block text-sm font-medium text-foreground"
+            >
+              {t('users.fieldUsername')}
+            </label>
+            <input
+              id="user-username"
+              type="text"
+              required
+              autoFocus
+              value={createForm.username}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  username: event.target.value
+                }))
+              }
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="user-max-speed"
+              className="mb-1.5 block text-sm font-medium text-foreground"
+            >
+              {t('users.fieldMaxSpeed')}
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="user-max-speed"
+                type="number"
+                min={MIN_SPEED}
+                max={MAX_SPEED}
+                required
+                value={createForm.maxSpeed}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    maxSpeed: event.target.value
+                  }))
+                }
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <span className="text-sm text-muted-foreground">
+                {t('users.mbps')}
+              </span>
+            </div>
+          </div>
+
+          <label
+            htmlFor="user-premium-access"
+            className="flex cursor-pointer items-center gap-2"
+          >
+            <input
+              id="user-premium-access"
+              type="checkbox"
+              checked={createForm.premiumAccess}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  premiumAccess: event.target.checked
+                }))
+              }
+              className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20"
+            />
+            <span className="text-sm font-medium text-foreground">
+              {t('users.fieldPremiumAccess')}
+            </span>
+          </label>
+
+          {createFormError && (
+            <p className="text-sm text-destructive" role="alert">
+              {createFormError}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={closeCreateModal}
+              disabled={creating}
+            >
+              {createdToken ? t('users.done') : t('users.cancel')}
+            </Button>
+            <Button type="submit" disabled={creating || createdToken !== null}>
+              {creating && <Spinner className="h-4 w-4" />}
+              {t('users.addUser')}
+            </Button>
+          </div>
+
+          {createdToken && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium text-foreground">
+                {t('users.tokenReadyTitle')}
+              </p>
+              <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
+                {t('users.tokenReadyHint')}
+              </p>
+              <div className="flex items-start gap-2">
+                <code className="flex-1 break-all rounded-md bg-card px-2 py-1.5 font-mono text-xs text-foreground">
+                  {createdToken}
+                </code>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyToken}
+                >
+                  {tokenCopied ? t('users.copied') : t('users.copyToken')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </form>
+      </Modal>
+
+      <Modal
+        open={issueTarget !== null}
+        onClose={closeIssueTokenModal}
+        title={t('users.issueTokenConfirmTitle')}
+      >
+        <div className="mx-auto max-w-md space-y-4">
+          {!issuedToken && (
+            <p className="text-sm text-muted-foreground">
+              {t('users.issueTokenWarning', {
+                name: issueTarget?.username ?? ''
+              })}
+            </p>
+          )}
+
+          {issueError && (
+            <p className="text-sm text-destructive" role="alert">
+              {issueError}
+            </p>
+          )}
+
+          {issuedToken && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium text-foreground">
+                {t('users.tokenIssuedTitle')}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t('users.tokenReadyHint')}
+              </p>
+              <p className="mb-2 text-xs text-destructive">
+                {t('users.oldTokenStopped')}
+              </p>
+              <div className="flex items-start gap-2">
+                <code className="flex-1 break-all rounded-md bg-card px-2 py-1.5 font-mono text-xs text-foreground">
+                  {issuedToken}
+                </code>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyIssuedToken}
+                >
+                  {issuedTokenCopied ? t('users.copied') : t('users.copyToken')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={closeIssueTokenModal}
+              disabled={issuing}
+            >
+              {issuedToken ? t('users.done') : t('users.cancel')}
+            </Button>
+            {!issuedToken && (
+              <Button
+                type="button"
+                onClick={() => void handleIssueToken()}
+                disabled={issuing}
+              >
+                {issuing && <Spinner className="h-4 w-4" />}
+                {t('users.issue')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

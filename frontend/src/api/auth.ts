@@ -44,3 +44,28 @@ export const changePassword = async (
   })
   setMustChangePassword(false)
 }
+
+export interface AdminProfile {
+  username: string
+}
+
+export const getCurrentAdmin = async (): Promise<AdminProfile> =>
+  apiRequest<AdminProfile>('/auth/me')
+
+export interface ProfileUpdatePayload {
+  currentPassword: string
+  newUsername?: string
+  newPassword?: string
+}
+
+export const updateProfile = async (
+  payload: ProfileUpdatePayload
+): Promise<LoginResponse> => {
+  const data = await apiRequest<LoginResponse>('/auth/profile', {
+    method: 'PUT',
+    body: payload
+  })
+  setToken(data.access_token)
+  setMustChangePassword(data.mustChangePassword)
+  return data
+}

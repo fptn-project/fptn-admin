@@ -70,6 +70,34 @@ class AdminStore:
         self._save(data)
         return True
 
+    def update_profile(
+        self,
+        login: str,
+        current_password: str,
+        new_login: str | None,
+        new_password: str | None,
+    ) -> str | None:
+        """Verify current_password, then apply the rename and/or password change.
+        Returns the (possibly new) login, or None if current_password was wrong."""
+        data = self._load()
+        entry = data.get(login)
+        if not entry or not bcrypt.checkpw(current_password.encode("utf-8"), entry["password_hash"].encode("utf-8")):
+            return None
+
+        if new_login and new_login != login:
+            if new_login in data:
+                raise AdminExists(new_login)
+            del data[login]
+            data[new_login] = entry
+            login = new_login
+
+        if new_password:
+            entry["password_hash"] = self._hash(new_password)
+            entry["must_change_password"] = False
+
+        self._save(data)
+        return login
+
     def ensure_seed(self, login: str | None, password: str | None, force_change: bool = False) -> None:
         """Seed the first admin when the store is empty (Grafana-style bootstrap)."""
         if self._load():

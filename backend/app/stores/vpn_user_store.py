@@ -23,6 +23,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+PREMIUM_SPEED_MBPS = 300
+
+
 class UserNotFound(Exception):
     def __init__(self, username: str):
         self.username = username
@@ -176,6 +179,13 @@ class VpnUserStore:
                     new_speed = 0
                 elif new_speed == 0:
                     new_speed = max_speed if max_speed is not None else default_speed
+
+            # Premium users get at least PREMIUM_SPEED_MBPS. Guarded by
+            # `new_speed > 0` so granting premium never silently unblocks
+            # someone who is (or was just set) blocked.
+            if premium and 0 < new_speed < PREMIUM_SPEED_MBPS:
+                new_speed = PREMIUM_SPEED_MBPS
+
             rec.speed = new_speed
 
             if new_username and new_username != username:

@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
+from io import BytesIO
 
 from telegram import BotCommand, ReplyKeyboardRemove, Update
 from telegram.constants import ParseMode
@@ -20,12 +21,20 @@ from app.vpn_token import build_access_link, build_token, generate_password
 
 logger = logging.getLogger("fptn_admin.bot")
 
+# Telegram's hard limit is 4096 chars per text message. A `fptn:` link grows
+# with the server count, so with enough servers it blows past that and
+# reply_text() raises "Message is too long" — fall back to a file then.
+TELEGRAM_MAX_MESSAGE_LENGTH = 4096
+
 _MESSAGES = {
     "en": {
         "status_registered": "🎉✨ You have successfully registered! 🎉",
         "status_reset": "🔑 Your token has been reset! 🔑",
+        "status_blocked": "🚫 Action blocked.",
         "info": "🌐 You can download the client from https://storage.googleapis.com/fptn.org/index.html",
         "click_to_copy": "📋💾 Tap the **token below** to copy it and paste it into the app! ⬇️",
+        "click_to_copy_file": "📎 Your token is attached as a file — open it, copy the contents "
+        "and paste them into the app.",
         "support_info": "You can support our small hobby project on [Boosty](https://boosty.to/fptn) by "
         "donating to help cover server costs. ❤️❤️❤️",
         "support_benefits": "_Sponsors enjoy unlimited speed, access to more servers, and can optionally have "
@@ -35,8 +44,11 @@ _MESSAGES = {
     "ru": {
         "status_registered": "🎉✨ Вы успешно зарегистрированы! 🎉",
         "status_reset": "🔑 Ваш токен был сброшен!🔑",
+        "status_blocked": "🚫 Действие заблокировано.",
         "info": "🌐 Клиент можно скачать с https://storage.googleapis.com/fptn.org/index.html",
         "click_to_copy": "📋💾 Нажмите на **токен ниже**, чтобы скопировать и вставите его в приложение! ⬇️",
+        "click_to_copy_file": "📎 Ваш токен во вложенном файле — откройте его, скопируйте "
+        "содержимое и вставьте в приложение.",
         "support_info": "Вы можете поддержать наш небольшой хобби-проект на [Boosty](https://boosty.to/fptn), "
         "сделав донат для оплаты серверов. ❤️❤️❤️",
         "support_benefits": "_Спонсорам мы убираем лимиты скорости, предоставляем доступ к большему числу "
@@ -80,6 +92,10 @@ async def _get_access_token(update: Update, _: CallbackContext) -> None:
     password = generate_password()
 
     rec = vpn_store.get(username)
+    if rec is not None and rec.blocked:
+        await _reply(update, messages["status_blocked"])
+        return
+
     if rec is None:
         rec = vpn_store.create(username, password, data.max_user_speed_limit, False)
         status_message = messages["status_registered"]
@@ -103,10 +119,21 @@ async def _get_access_token(update: Update, _: CallbackContext) -> None:
         update,
         f"{status_message}\n\n"
         f"{messages['info']}\n\n"
-        f"{messages['click_to_copy']}\n\n"
-        f"`{link}` \n\n{messages['support_info']} \n{messages['support_benefits']}",
+        f"{messages['support_info']} \n{messages['support_benefits']}",
         disable_web_page_preview=True,
     )
+
+    token_message = f"{messages['click_to_copy']}\n\n`{link}`"
+    if len(token_message) <= TELEGRAM_MAX_MESSAGE_LENGTH:
+        await _reply(update, token_message, disable_web_page_preview=True)
+    else:
+        # Too long to send as text (happens once the server list grows) —
+        # send it as a small file instead so it never hits the limit.
+        await update.message.reply_document(
+            document=BytesIO(link.encode("utf-8")),
+            filename="fptn_token.txt",
+            caption=messages["click_to_copy_file"],
+        )
 
 
 async def _post_init(application: Application) -> None:

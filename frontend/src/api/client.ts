@@ -11,6 +11,12 @@ export const setToken = (token: string): void =>
 
 export const clearToken = (): void => localStorage.removeItem(TOKEN_STORAGE_KEY)
 
+let onUnauthorized: (() => void) | null = null
+
+export const setUnauthorizedHandler = (handler: (() => void) | null): void => {
+  onUnauthorized = handler
+}
+
 export const getMustChangePassword = (): boolean =>
   localStorage.getItem(MUST_CHANGE_PASSWORD_KEY) === 'true'
 
@@ -67,6 +73,10 @@ export const apiRequest = async <T>(
   })
 
   if (!response.ok) {
+    if (response.status === 401 && auth) {
+      clearToken()
+      onUnauthorized?.()
+    }
     throw new ApiError(response.status, await extractErrorMessage(response))
   }
 

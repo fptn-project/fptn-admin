@@ -1,13 +1,15 @@
 import React, { ReactElement, useEffect, useState } from 'react'
-import { Crown, Users, type LucideIcon } from 'lucide-react'
+import { Bot, Crown, Users, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../api/client'
 import { getHighlights } from '../api/dashboard'
+import { getBotSettings } from '../api/settings'
 import Spinner from '../components/ui/Spinner'
 
 interface HighlightData {
   totalUsers: number
   premiumUsers: number
+  telegramBotEnabled: boolean
 }
 
 const Dashboard = (): ReactElement => {
@@ -20,12 +22,13 @@ const Dashboard = (): ReactElement => {
     let cancelled = false
     setLoading(true)
 
-    getHighlights()
-      .then((result) => {
+    Promise.all([getHighlights(), getBotSettings()])
+      .then(([highlights, botSettings]) => {
         if (cancelled) return
         setData({
-          totalUsers: result.totalUsers,
-          premiumUsers: result.premiumUsers
+          totalUsers: highlights.totalUsers,
+          premiumUsers: highlights.premiumUsers,
+          telegramBotEnabled: botSettings.botEnabled
         })
       })
       .catch((err) => {
@@ -46,7 +49,8 @@ const Dashboard = (): ReactElement => {
   const highlights: {
     key: string
     label: string
-    value: string
+    value?: string
+    indicator?: boolean
     icon: LucideIcon
   }[] = data
     ? [
@@ -61,6 +65,12 @@ const Dashboard = (): ReactElement => {
           label: t('dashboard.premiumUsers'),
           value: data.premiumUsers.toLocaleString(),
           icon: Crown
+        },
+        {
+          key: 'telegramBot',
+          label: t('dashboard.telegramBot'),
+          indicator: data.telegramBotEnabled,
+          icon: Bot
         }
       ]
     : []
@@ -104,9 +114,24 @@ const Dashboard = (): ReactElement => {
                   <highlight.icon className="h-5 w-5 text-foreground" />
                 </span>
               </div>
-              <p className="text-2xl font-semibold text-foreground">
-                {highlight.value}
-              </p>
+              {highlight.indicator === undefined ? (
+                <p className="text-2xl font-semibold text-foreground">
+                  {highlight.value}
+                </p>
+              ) : (
+                <div className="flex h-8 items-center gap-2">
+                  <span
+                    className={`inline-block h-3.5 w-3.5 rounded-full ${
+                      highlight.indicator ? 'bg-success' : 'bg-muted-foreground'
+                    }`}
+                  />
+                  <p className="text-2xl font-semibold text-foreground">
+                    {highlight.indicator
+                      ? t('dashboard.telegramBotEnabled')
+                      : t('dashboard.telegramBotDisabled')}
+                  </p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">{highlight.label}</p>
             </div>
           ))}
