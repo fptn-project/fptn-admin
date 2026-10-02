@@ -268,3 +268,47 @@ def test_bot_runner_stop_works_when_called_from_a_different_thread(monkeypatch):
     bot_runner.stop()  # called from this (the test's) thread, not the bot's
 
     assert bot_runner.running is False
+
+
+def test_bot_runner_stop_after_the_thread_dies_on_its_own(monkeypatch):
+    """If Telegram rejects the token (or any other error), run_polling()
+    raises, the thread exits, and python-telegram-bot closes its loop as
+    part of shutdown. A later stop() (e.g. toggling the bot off in the UI)
+    must not blow up with "Event loop is closed"."""
+
+    class FakeApplication:
+        def add_handler(self, *_args, **_kwargs):
+            pass
+
+        def run_polling(self, **_kwargs):
+            # Mirrors python-telegram-bot's real behavior: it closes the loop
+            # it owns as part of shutdown before the error propagates.
+            asyncio.get_event_loop().close()
+            raise RuntimeError("Telegram rejected the token")
+
+        def stop_running(self):
+            pass
+
+    class FakeBuilder:
+        def token(self, _token):
+            return self
+
+        def post_init(self, _callback):
+            return self
+
+        def build(self):
+            return FakeApplication()
+
+    monkeypatch.setattr(telegram_bot_module.Application, "builder", staticmethod(FakeBuilder))
+    bot_settings_store.update(telegram_token="fake-token")
+
+    bot_runner.start()
+    for _ in range(100):
+        if not bot_runner.running:
+            break
+        time.sleep(0.01)
+    assert bot_runner.running is False  # the thread already died on its own
+
+    bot_runner.stop()  # must not raise RuntimeError: Event loop is closed
+
+    assert bot_runner.running is False

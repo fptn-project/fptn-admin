@@ -190,7 +190,6 @@
     "statusRunning": "Запущен",
     "statusStopped": "Остановлен",
     "enabledLabel": "Бот включён",
-    "editDisabledWhileEnabled": "Выключите бота, чтобы изменить эти настройки.",
     "tokenLabel": "Токен телеграм-бота",
     "tokenCurrentMasked": "Текущий токен: {{token}}",
     "tokenCurrentEmpty": "Токен ещё не задан",
