@@ -16,7 +16,7 @@ class BotSettings:
     telegram_token: str = ""
     bot_enabled: bool = False
     max_user_speed_limit: int = 30
-    service_name: str = "fptn"
+    service_name: str = "FPTN.ONLINE"
     welcome_message_en: str = ""
     welcome_message_ru: str = ""
 

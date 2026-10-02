@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     telegram_token: str = ""
     bot_enabled: bool = False
     max_user_speed_limit: int = 30
-    service_name: str = "fptn"
+    service_name: str = "FPTN.ONLINE"
     welcome_message_en: str = (
         "⚡ Welcome to the FPTN bot! ⚡\n"
         "Use this bot to get a VPN access token or reset it.\n\n"
