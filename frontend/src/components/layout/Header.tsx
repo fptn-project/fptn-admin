@@ -1,5 +1,5 @@
 import React, { ReactElement, useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Menu,
@@ -7,7 +7,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
-  Sparkles,
   Sun
 } from 'lucide-react'
 import { useLayout } from './LayoutContext'
@@ -22,8 +21,6 @@ const Header = (): ReactElement => {
   const { mode, toggleMode } = useTheme()
   const { logout, username } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const isUsersPage = location.pathname === '/users'
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const initials = username ? username.slice(0, 2).toUpperCase() : '··'
@@ -105,18 +102,6 @@ const Header = (): ReactElement => {
         </Button>
 
         <div className="ml-auto flex flex-shrink-0 items-center gap-1 sm:gap-2">
-          {isUsersPage && (
-            <Button
-              size="sm"
-              onClick={() => navigate('/premium')}
-              title={t('header.givePremiumAccess')}
-            >
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {t('header.givePremiumAccess')}
-              </span>
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"

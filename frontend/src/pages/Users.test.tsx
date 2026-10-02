@@ -1,10 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { createUser, issueToken, listUsers, VpnUser } from '../api/users'
 import { getHighlights } from '../api/dashboard'
 import Users from './Users'
+
+const renderUsers = (): ReturnType<typeof render> =>
+  render(
+    <MemoryRouter>
+      <Users />
+    </MemoryRouter>
+  )
 
 vi.mock('../api/users', async () => {
   const actual = await vi.importActual<typeof import('../api/users')>(
@@ -51,7 +59,7 @@ describe('Users page — create user', () => {
 
   it('opens the modal with a default max speed of 20', async () => {
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(await screen.findByRole('button', { name: /add user/i }))
 
@@ -68,7 +76,7 @@ describe('Users page — create user', () => {
       token: 'fptn:abc123'
     })
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(await screen.findByRole('button', { name: /add user/i }))
     await user.type(screen.getByLabelText(/^username$/i), '  12345  ')
@@ -105,7 +113,7 @@ describe('Users page — create user', () => {
       value: { writeText },
       configurable: true
     })
-    render(<Users />)
+    renderUsers()
 
     await user.click(await screen.findByRole('button', { name: /add user/i }))
     await user.type(screen.getByLabelText(/^username$/i), '12345')
@@ -122,7 +130,7 @@ describe('Users page — create user', () => {
 
   it('rejects a non-alphanumeric username without calling the API', async () => {
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(await screen.findByRole('button', { name: /add user/i }))
     await user.type(screen.getByLabelText(/^username$/i), 'bad name!')
@@ -139,7 +147,7 @@ describe('Users page — create user', () => {
       new ApiError(409, 'User 12345 already exists')
     )
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(await screen.findByRole('button', { name: /add user/i }))
     await user.type(screen.getByLabelText(/^username$/i), '12345')
@@ -168,7 +176,7 @@ describe('Users page — issue a new token', () => {
   it('warns before issuing and only calls the API after confirming', async () => {
     vi.mocked(issueToken).mockResolvedValue({ token: 'fptn:new-token' })
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(
       await screen.findByRole('button', {
@@ -189,7 +197,7 @@ describe('Users page — issue a new token', () => {
 
   it('closes without issuing when cancelled', async () => {
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(
       await screen.findByRole('button', {
@@ -207,7 +215,7 @@ describe('Users page — issue a new token', () => {
   it('shows the backend error when issuing fails', async () => {
     vi.mocked(issueToken).mockRejectedValue(new ApiError(404, 'User not found'))
     const user = userEvent.setup()
-    render(<Users />)
+    renderUsers()
 
     await user.click(
       await screen.findByRole('button', {
@@ -217,5 +225,38 @@ describe('Users page — issue a new token', () => {
     await user.click(screen.getByRole('button', { name: /^issue$/i }))
 
     expect(await screen.findByText('User not found')).toBeInTheDocument()
+  })
+})
+
+describe('Users page — give premium access button', () => {
+  beforeEach(() => {
+    vi.mocked(listUsers).mockResolvedValue({ users: [someUser], total: 1 })
+    vi.mocked(getHighlights).mockResolvedValue({
+      totalUsers: 1,
+      premiumUsers: 0,
+      blockedUsers: 0
+    })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('sits next to Add user and navigates to /premium', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={['/users']}>
+        <Routes>
+          <Route path="/users" element={<Users />} />
+          <Route path="/premium" element={<div>premium-page</div>} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: /give premium access/i })
+    )
+
+    expect(await screen.findByText('premium-page')).toBeInTheDocument()
   })
 })

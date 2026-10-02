@@ -17,16 +17,26 @@ logger = logging.getLogger("fptn_admin.ping_checker")
 CHECK_INTERVAL_SECONDS = 10
 CONNECT_TIMEOUT_SECONDS = 2
 UNREACHABLE_PING = -1
+PING_SAMPLES = 3
 
 
-def measure_ping_ms(host: str, port: int) -> int:
+def _measure_once(host: str, port: int) -> int | None:
     start = time.monotonic()
     try:
         with socket.create_connection((host, port), timeout=CONNECT_TIMEOUT_SECONDS):
             pass
     except OSError:
-        return UNREACHABLE_PING
+        return None
     return round((time.monotonic() - start) * 1000)
+
+
+def measure_ping_ms(host: str, port: int) -> int:
+    """Average of PING_SAMPLES TCP-connect attempts — a single attempt jumps
+    around too much (one slow handshake skews the whole reading)."""
+    samples = [sample for sample in (_measure_once(host, port) for _ in range(PING_SAMPLES)) if sample is not None]
+    if not samples:
+        return UNREACHABLE_PING
+    return round(sum(samples) / len(samples))
 
 
 class PingChecker:

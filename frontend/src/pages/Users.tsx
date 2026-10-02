@@ -12,6 +12,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -95,6 +96,7 @@ const ToggleBadge = ({
 
 const Users = (): ReactElement => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [users, setUsers] = useState<VpnUser[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -365,10 +367,16 @@ const Users = (): ReactElement => {
             {t('users.title')}
           </h1>
         </div>
-        <Button onClick={openCreateModal}>
-          <Plus className="h-4 w-4" />
-          {t('users.addUser')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/premium')}>
+            <Sparkles className="h-4 w-4" />
+            {t('header.givePremiumAccess')}
+          </Button>
+          <Button onClick={openCreateModal}>
+            <Plus className="h-4 w-4" />
+            {t('users.addUser')}
+          </Button>
+        </div>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -759,10 +767,13 @@ const Users = (): ReactElement => {
           {issuedToken && (
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-sm font-medium text-foreground">
-                {t('users.tokenReadyTitle')}
+                {t('users.tokenIssuedTitle')}
               </p>
-              <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {t('users.tokenReadyHint')}
+              </p>
+              <p className="mb-2 text-xs text-destructive">
+                {t('users.oldTokenStopped')}
               </p>
               <div className="flex items-start gap-2">
                 <code className="flex-1 break-all rounded-md bg-card px-2 py-1.5 font-mono text-xs text-foreground">

@@ -21,7 +21,8 @@ users, servers and the Telegram bot without editing config files over SSH.
 
 With it you can:
 
-- 👥 **Users** — view, search and filter, block or unblock, grant premium access
+- 👥 **Users** — add users and issue or reissue their access tokens, search
+  and filter, block or unblock, grant premium access
 - 🖥️ **Servers** — add, edit and remove the VPN servers your clients connect to
 - 🤖 **Telegram bot** — enable or disable it and edit its welcome message
 - 📊 **Dashboard** — total, premium and blocked users at a glance
@@ -39,7 +40,7 @@ With it you can:
 <img src="docs/images/en/dashboard.png" alt="Dashboard" width="720"/>
 <br/>
 
-**Users** — search, filter, block/unblock, or give premium access, right from the table
+**Users** — add a user, issue or reissue a token, search, filter, block/unblock, or give premium access, right from the table
 
 <img src="docs/images/en/users.png" alt="Users list" width="720"/>
 <br/>
@@ -107,6 +108,10 @@ images on Docker Hub. You need a **Linux** host with
    In the panel: **Servers → Add server** (host, port `443`, and the fingerprint
    from step 3), then **Users → Add user** — the connection token (`fptn:…`) is
    shown on creation; paste it into the FPTN client.
+
+   A user lost their token, or you want to rotate it? Click **Issue token**
+   next to them in the Users table — a fresh token is generated on the spot
+   and the old one stops working immediately.
 
 7. **Enable the Telegram bot** *(optional)*
 

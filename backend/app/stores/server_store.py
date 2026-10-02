@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import threading
 from pathlib import Path
+
+logger = logging.getLogger("fptn_admin.server_store")
 
 
 class ServerExists(Exception):
@@ -96,17 +99,22 @@ class ServerStore:
             return server
 
     def update_pings(self, pings: dict[str, dict[str, int]]) -> None:
-        """Bulk-apply {kind: {server_name: ping_ms}}, one read+write per kind."""
+        """Bulk-apply {kind: {server_name: ping_ms}}, one read+write per kind.
+        A failure on one kind (e.g. a permission error on one file) must not
+        block the others, so each kind's write is isolated."""
         with self._lock:
             for kind, kind_pings in pings.items():
                 if not kind_pings:
                     continue
-                servers = self._read(kind)
-                changed = False
-                for server in servers:
-                    new_ping = kind_pings.get(server.get("name"))
-                    if new_ping is not None and server.get("ping") != new_ping:
-                        server["ping"] = new_ping
-                        changed = True
-                if changed:
-                    self._write(kind, servers)
+                try:
+                    servers = self._read(kind)
+                    changed = False
+                    for server in servers:
+                        new_ping = kind_pings.get(server.get("name"))
+                        if new_ping is not None and server.get("ping") != new_ping:
+                            server["ping"] = new_ping
+                            changed = True
+                    if changed:
+                        self._write(kind, servers)
+                except OSError:
+                    logger.exception("Failed to persist pings for %r", kind)
