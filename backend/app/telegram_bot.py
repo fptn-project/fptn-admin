@@ -176,9 +176,14 @@ class BotRunner:
             application = self._application
             loop = self._loop
             thread = self._thread
-        if application is not None and loop is not None:
+        if application is not None and loop is not None and not loop.is_closed():
             # stop_running() needs a running loop, so it has to run on the bot's own thread.
-            loop.call_soon_threadsafe(application.stop_running)
+            # The thread may have died on its own between the checks above and here
+            # (e.g. Telegram rejected the token), closing the loop first — ignore that race.
+            try:
+                loop.call_soon_threadsafe(application.stop_running)
+            except RuntimeError:
+                pass
         if thread is not None:
             thread.join(timeout=10)
         with self._lock:
@@ -199,8 +204,18 @@ class BotRunner:
         logger.info("Telegram bot started polling.")
         try:
             application.run_polling(stop_signals=None)
+        except Exception:  # pylint: disable=broad-exception-caught
+            # e.g. an invalid token, or a 409 Conflict from another process
+            # polling the same bot — surface it instead of a silent thread death.
+            logger.exception("Telegram bot crashed")
         finally:
             logger.info("Telegram bot stopped polling.")
+            # Clear our references even if the loop died on its own (e.g. Telegram
+            # rejected the token) so a later stop() doesn't find a closed loop.
+            with self._lock:
+                if self._loop is loop:
+                    self._loop = None
+                    self._application = None
 
 
 bot_runner = BotRunner()

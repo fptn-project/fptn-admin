@@ -188,7 +188,6 @@
     "statusRunning": "Running",
     "statusStopped": "Stopped",
     "enabledLabel": "Bot enabled",
-    "editDisabledWhileEnabled": "Turn the bot off to edit these settings.",
     "tokenLabel": "Telegram bot token",
     "tokenCurrentMasked": "Current token: {{token}}",
     "tokenCurrentEmpty": "No token set yet",

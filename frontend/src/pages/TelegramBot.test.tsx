@@ -39,7 +39,7 @@ describe('TelegramBot settings', () => {
     expect(screen.getByRole('button', { name: /^save$/i })).toBeEnabled()
   })
 
-  it('locks every field except the toggle while the bot is enabled', async () => {
+  it('also leaves the fields editable while the bot is enabled', async () => {
     vi.mocked(getBotSettings).mockResolvedValue({
       ...baseSettings,
       botEnabled: true,
@@ -47,14 +47,12 @@ describe('TelegramBot settings', () => {
     })
     render(<TelegramBot />)
 
-    expect(await screen.findByLabelText(/service name/i)).toBeDisabled()
-    expect(screen.getByLabelText(/telegram bot token/i)).toBeDisabled()
-    expect(screen.getByLabelText(/default speed limit/i)).toBeDisabled()
-    expect(screen.getByLabelText(/welcome message \(en\)/i)).toBeDisabled()
-    expect(screen.getByLabelText(/welcome message \(ru\)/i)).toBeDisabled()
-    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
-
-    // the on/off switch itself must stay usable
+    expect(await screen.findByLabelText(/service name/i)).toBeEnabled()
+    expect(screen.getByLabelText(/telegram bot token/i)).toBeEnabled()
+    expect(screen.getByLabelText(/default speed limit/i)).toBeEnabled()
+    expect(screen.getByLabelText(/welcome message \(en\)/i)).toBeEnabled()
+    expect(screen.getByLabelText(/welcome message \(ru\)/i)).toBeEnabled()
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeEnabled()
     expect(screen.getByRole('switch')).toBeEnabled()
   })
 })
