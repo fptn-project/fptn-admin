@@ -107,3 +107,14 @@
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
   }
 }
+
+/* iOS Safari auto-zooms the page on focusing any text input smaller than
+   16px — force form controls to 16px below the desktop breakpoint so
+   focusing a field doesn't zoom the whole page in. */
+@media (max-width: 1023px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

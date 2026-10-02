@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.deps import admin_store, bot_settings_store
+from app.deps import admin_store, bot_settings_store, ping_checker
 from app.exceptions import register_exception_handlers
 from app.routers import auth, dashboard, servers, settings as settings_router, users
 from app.secret import get_jwt_secret
@@ -27,9 +27,11 @@ async def lifespan(_: FastAPI):
     )
     if bot_settings_store.get().bot_enabled:
         bot_runner.start()
+    ping_checker.start()
     logger.info("fptn-admin API started")
     yield
     bot_runner.stop()
+    ping_checker.stop()
 
 
 TAGS_METADATA = [

@@ -103,8 +103,9 @@ def issue_token(username: str) -> UserToken:
 )
 def create_user(body: UserCreate) -> UserCreated:
     max_speed = body.maxSpeed if body.maxSpeed is not None else bot_settings_store.get().max_user_speed_limit
-    rec = vpn_store.create(body.username, body.password, max_speed, body.premiumAccess)
-    token = _issue_token(rec.username, body.password, rec.is_premium)
+    password = body.password or generate_password()
+    rec = vpn_store.create(body.username, password, max_speed, body.premiumAccess)
+    token = _issue_token(rec.username, password, rec.is_premium)
     return UserCreated(
         username=rec.username,
         blocked=rec.blocked,

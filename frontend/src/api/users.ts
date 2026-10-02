@@ -55,3 +55,27 @@ export const updateUser = async (
     method: 'PUT',
     body: patch
   })
+
+export interface UserCreatePayload {
+  username: string
+  maxSpeed: number
+  premiumAccess: boolean
+}
+
+export interface UserCreated extends VpnUser {
+  token: string
+}
+
+export const createUser = async (
+  payload: UserCreatePayload
+): Promise<UserCreated> =>
+  apiRequest<UserCreated>('/users', { method: 'POST', body: payload })
+
+export interface UserToken {
+  token: string
+}
+
+export const issueToken = async (username: string): Promise<UserToken> =>
+  apiRequest<UserToken>(`/users/${encodeURIComponent(username)}/token`, {
+    method: 'POST'
+  })

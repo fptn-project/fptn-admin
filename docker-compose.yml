@@ -3,11 +3,11 @@ services:
     image: fptnvpn/fptn-admin-backend:latest
     restart: unless-stopped
     environment:
-      - JWT_TTL_MINUTES=60
+      - JWT_TTL_MINUTES=10080
       - ADMIN_LOGIN=admin
       - ADMIN_PASSWORD=admin
       - CORS_ORIGINS=*
-      - ENABLE_BROTLI_COMPRESSION=false
+      - ENABLE_BROTLI_COMPRESSION=true
     volumes:
       - ./compose-data:/etc/fptn:rw
   fptn-admin-frontend:

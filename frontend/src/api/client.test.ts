@@ -6,7 +6,8 @@ import {
   getMustChangePassword,
   getToken,
   setMustChangePassword,
-  setToken
+  setToken,
+  setUnauthorizedHandler
 } from './client'
 
 describe('token storage', () => {
@@ -136,5 +137,35 @@ describe('apiRequest', () => {
     vi.mocked(fetch).mockResolvedValue(new Response('{}', { status: 404 }))
 
     await expect(apiRequest('/users/ghost')).rejects.toBeInstanceOf(ApiError)
+  })
+
+  it('on a 401, clears the token and notifies the unauthorized handler', async () => {
+    setToken('jwt-expired')
+    vi.mocked(fetch).mockResolvedValue(new Response('{}', { status: 401 }))
+    const handler = vi.fn()
+    setUnauthorizedHandler(handler)
+
+    await expect(apiRequest('/users')).rejects.toBeInstanceOf(ApiError)
+
+    expect(getToken()).toBeNull()
+    expect(handler).toHaveBeenCalledTimes(1)
+
+    setUnauthorizedHandler(null)
+  })
+
+  it('does not treat a 401 from an unauthenticated request as a session expiry', async () => {
+    setToken('jwt-abc')
+    vi.mocked(fetch).mockResolvedValue(new Response('{}', { status: 401 }))
+    const handler = vi.fn()
+    setUnauthorizedHandler(handler)
+
+    await expect(
+      apiRequest('/auth/login', { auth: false })
+    ).rejects.toBeInstanceOf(ApiError)
+
+    expect(getToken()).toBe('jwt-abc')
+    expect(handler).not.toHaveBeenCalled()
+
+    setUnauthorizedHandler(null)
   })
 })

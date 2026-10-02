@@ -11,7 +11,7 @@ import {
 } from '../api/settings'
 
 const inputClass =
-  'w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20'
+  'w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60'
 
 const labelClass = 'mb-1.5 block text-sm font-medium text-foreground'
 
@@ -216,6 +216,12 @@ const TelegramBot = (): ReactElement => {
         onSubmit={(event) => void handleSubmit(event)}
         className="space-y-6"
       >
+        {botEnabled && (
+          <p className="text-sm text-muted-foreground">
+            {t('telegramBot.editDisabledWhileEnabled')}
+          </p>
+        )}
+
         <div className="rounded-xl border border-border bg-card p-5">
           <label htmlFor="telegram-token" className={labelClass}>
             {t('telegramBot.tokenLabel')}
@@ -228,6 +234,7 @@ const TelegramBot = (): ReactElement => {
             placeholder={t('telegramBot.tokenPlaceholder')}
             className={`${inputClass} font-mono`}
             autoComplete="off"
+            disabled={botEnabled}
           />
           <p className="mt-1.5 text-xs text-muted-foreground">
             {maskedToken
@@ -253,6 +260,7 @@ const TelegramBot = (): ReactElement => {
                 }))
               }
               className={inputClass}
+              disabled={botEnabled}
             />
           </div>
 
@@ -273,6 +281,7 @@ const TelegramBot = (): ReactElement => {
                 }))
               }
               className={inputClass}
+              disabled={botEnabled}
             />
           </div>
         </div>
@@ -293,6 +302,7 @@ const TelegramBot = (): ReactElement => {
                 }))
               }
               className={`${inputClass} resize-y`}
+              disabled={botEnabled}
             />
           </div>
 
@@ -311,6 +321,7 @@ const TelegramBot = (): ReactElement => {
                 }))
               }
               className={`${inputClass} resize-y`}
+              disabled={botEnabled}
             />
           </div>
         </div>
@@ -327,7 +338,7 @@ const TelegramBot = (): ReactElement => {
         )}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" disabled={saving || botEnabled}>
             {saving && <Spinner className="h-4 w-4" />}
             {saving ? t('telegramBot.saving') : t('telegramBot.save')}
           </Button>

@@ -23,9 +23,13 @@ os.environ["BOT_SETTINGS_FILE"] = os.path.join(_TMP, "bot_settings.json")
 def client():
     from fastapi.testclient import TestClient
 
+    from app.deps import ping_checker
     from app.main import app
 
     with TestClient(app) as c:
+        # Stop the background pinger right after startup so tests don't make
+        # real network connections to the fake hosts they create.
+        ping_checker.stop()
         yield c
 
 

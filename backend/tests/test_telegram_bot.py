@@ -23,10 +23,18 @@ def _token_from_reply(text: str) -> str:
     return text.split("`")[1]
 
 
+def _all_reply_text(update) -> str:
+    """_get_access_token now sends the status/info and the token as two
+    separate messages (to stay under Telegram's length limit) — join them
+    so existing assertions can search across both."""
+    return "\n".join(call.args[0] for call in update.message.reply_text.await_args_list)
+
+
 def _make_update(user_id: int = 100, language_code: str | None = "en"):
     message = SimpleNamespace(
         from_user=SimpleNamespace(id=user_id, language_code=language_code),
         reply_text=AsyncMock(),
+        reply_document=AsyncMock(),
     )
     return SimpleNamespace(message=message)
 
@@ -102,9 +110,8 @@ def test_get_access_token_registers_a_new_user():
     assert rec is not None
     assert rec.is_premium is False
 
-    text = update.message.reply_text.call_args[0][0]
-    assert "registered" in text.lower()
-    data = _decode(_token_from_reply(text))
+    assert "registered" in _all_reply_text(update).lower()
+    data = _decode(_token_from_reply(update.message.reply_text.call_args[0][0]))
     assert data["username"] == "user555"
     assert [s["name"] for s in data["servers"]] == ["S1"]
 
@@ -118,11 +125,45 @@ def test_get_access_token_resets_an_existing_user_with_a_new_password():
 
     update.message.reply_text.reset_mock()
     asyncio.run(_get_access_token(update, None))
-    second_text = update.message.reply_text.call_args[0][0]
-    second_token = _token_from_reply(second_text)
+    second_token = _token_from_reply(update.message.reply_text.call_args[0][0])
 
-    assert "reset" in second_text.lower()
+    assert "reset" in _all_reply_text(update).lower()
     assert _decode(first_token)["password"] != _decode(second_token)["password"]
+
+
+def test_get_access_token_refuses_a_blocked_user():
+    _add_server("regular", "S1", "1.2.3.4")
+    created = vpn_store.create("user999", "initial-pw", 0, False)  # speed 0 => blocked
+
+    update = _make_update(user_id=999)
+    asyncio.run(_get_access_token(update, None))
+
+    text = update.message.reply_text.call_args[0][0]
+    assert "blocked" in text.lower()
+    assert "`" not in text  # no token leaked in the reply
+    assert vpn_store.get("user999").password_hash == created.password_hash
+
+
+def test_get_access_token_sends_a_file_when_the_link_is_too_long(monkeypatch):
+    """With enough servers, `fptn:<base64>` can exceed Telegram's 4096-char
+    text limit (telegram.error.BadRequest: Message is too long). Force that
+    branch with a tiny limit instead of adding dozens of fake servers."""
+    monkeypatch.setattr(telegram_bot_module, "TELEGRAM_MAX_MESSAGE_LENGTH", 10)
+    _add_server("regular", "S1", "1.2.3.4")
+
+    update = _make_update(user_id=321)
+    asyncio.run(_get_access_token(update, None))
+
+    update.message.reply_document.assert_awaited_once()
+    _, kwargs = update.message.reply_document.call_args
+    assert kwargs["filename"] == "fptn_token.txt"
+    sent_link = kwargs["document"].getvalue().decode("utf-8")
+    assert sent_link.startswith("fptn:")
+    assert _decode(sent_link)["username"] == "user321"
+
+    # the token itself must never be sent as text once it's routed to a file
+    for call in update.message.reply_text.await_args_list:
+        assert "`" not in call.args[0]
 
 
 def test_get_access_token_premium_user_gets_premium_servers():

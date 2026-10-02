@@ -7,6 +7,7 @@ import Users from './pages/Users'
 import Servers from './pages/Servers'
 import TelegramBot from './pages/TelegramBot'
 import GivePremiumAccess from './pages/GivePremiumAccess'
+import ProfileSettings from './pages/ProfileSettings'
 import Login from './pages/Login'
 import ChangePassword from './pages/ChangePassword'
 import ComingSoon from './pages/ComingSoon'
@@ -37,6 +38,7 @@ const App = (): ReactElement => {
           <Route path="/servers" element={<Servers />} />
           <Route path="/telegram-bot" element={<TelegramBot />} />
           <Route path="/premium" element={<GivePremiumAccess />} />
+          <Route path="/profile" element={<ProfileSettings />} />
           <Route path="*" element={<ComingSoon />} />
         </Route>
       </Routes>

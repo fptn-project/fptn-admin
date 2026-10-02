@@ -28,6 +28,12 @@ class ChangePassword(BaseModel):
     newPassword: str = Field(min_length=8)
 
 
+class ProfileUpdate(BaseModel):
+    currentPassword: str
+    newUsername: Optional[str] = Field(default=None, min_length=1)
+    newPassword: Optional[str] = Field(default=None, min_length=8)
+
+
 class VpnUser(BaseModel):
     username: str
     blocked: bool
@@ -56,7 +62,7 @@ class UserUpdate(BaseModel):
 
 class UserCreate(BaseModel):
     username: str
-    password: str
+    password: Optional[str] = None
     maxSpeed: Optional[int] = Field(default=None, ge=0)
     premiumAccess: bool = False
 
